@@ -258,7 +258,7 @@ class Database:
                 return self.c.execute("SELECT user_id FROM user_data WHERE command = ? AND chat_id = ?",
                                       (command, chat_id)).fetchone()[0]
 
-    def married_set_users(self, chat_id: int, user_id: int, user2_id: int, user2_name: int):
+    def married_set_users(self, chat_id: int, user_id: int, user2_id: int):
         with self.conn:
             self.c.execute("UPDATE user_data SET married = ? WHERE user_id = ? AND chat_id = ?",
                            (1, user_id, chat_id))

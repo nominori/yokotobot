@@ -308,8 +308,8 @@ async def do(message: types.Message):
             user2_id = data.married_get_data(chat_id, 'Пропозиція', 'user_id')
             user2_name = data.married_get_data(chat_id, 'Пропозиція', 'name')
             if message.text == 'Так':
-                data.married_set_users(chat_id, user_id, user2_id, user2_name)
-                data.married_set_users(chat_id, user2_id, user_id, user1_name)
+                data.married_set_users(chat_id, user_id, user2_id)
+                data.married_set_users(chat_id, user2_id, user_id)
                 data.change_command(user_id, chat_id, '')
                 data.change_command(user2_id, chat_id, '')
                 await bot.send_message(chat_id, f"{user1_name} тепер офіційно у шлюбі з {user2_name}")
