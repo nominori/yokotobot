@@ -59,7 +59,6 @@ class Database:
                     job_changes INTEGER NOT NULL DEFAULT 0,
                     married     INTEGER NOT NULL DEFAULT 0,
                     user2_id    INTEGER NOT NULL DEFAULT 0,
-                    family      TEXT    NOT NULL DEFAULT 'Нема',
                     kittens     INTEGER NOT NULL DEFAULT 0,
                     kitten_photo   TEXT    NOT NULL DEFAULT '',
                     kitten_level   INTEGER    NOT NULL DEFAULT 1,
@@ -265,15 +264,11 @@ class Database:
                            (1, user_id, chat_id))
             self.c.execute("UPDATE user_data SET user2_id = ? WHERE user_id = ? AND chat_id = ?",
                            (user2_id, user_id, chat_id))
-            self.c.execute("UPDATE user_data SET family = ? WHERE user_id = ? AND chat_id = ?",
-                           (user2_name, user_id, chat_id))
 
     def married_break(self, chat_id: int, user_id: int):
         with self.conn:
             self.c.execute("UPDATE user_data SET married = ? WHERE user_id = ? AND chat_id = ?",
                            (2, user_id, chat_id))
-            self.c.execute("UPDATE user_data SET family = ? WHERE user_id = ? AND chat_id = ?",
-                           ("Розлучений", user_id, chat_id))
 
     def kittens(self, chat_id: int, user_id: int, user2_id: int):
         with self.conn:
@@ -406,8 +401,8 @@ class Database:
                  'hungry': 9, 'feed_limit': 10, 'wanna_play': 11, 'not_play_times': 12, 'happiness': 13,
                  'zero_times': 14, 'health': 15, 'job': 16, 'job_status': 17, 'job_hours': 18, 'money': 19,
                  'command': 20, 'name_sets': 21, 'kill_ever': 22, 'alive': 23, 'job_changes': 24, 'married': 25,
-                 'user2_id': 26, 'family': 27, 'kittens': 28, 'kitten_photo': 29, 'kitten_level': 30,
-                 'kitten_type': 31, 'mother_id': 32, 'father_id': 33}
+                 'user2_id': 26, 'kittens': 27, 'kitten_photo': 28, 'kitten_level': 29,
+                 'kitten_type': 30, 'mother_id': 31, 'father_id': 32}
             list_ = list(self.c.execute("SELECT * FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone())
             if target == 'all1':
                 if self.get_data(user_id, chat_id, 'level') == 'Кошенятко':
@@ -428,15 +423,18 @@ class Database:
                 elif 5 <= int(self.get_data(user_id, chat_id, 'under_level')) < 15:
                     return f"🐱Ім'я: {list_[4]}\n🧩Хоче гратися: {list_[11]}\n💰Ваш баланс: {list_[19]}\n"
                 elif int(self.get_data(user_id, chat_id, 'under_level')) >= 15:
-                    if list_[27] == 'Розлучений':
-                        list_[27] = f"Розлучений з {self.get_data(list_[26], chat_id, 'name')}"
-                    elif list_[27] not in ['Розлучений', 'Нема']:
-                        list_[27] = self.get_data(list_[26], chat_id, 'name')
+                    family = ''
+                    if list_[25] == 0:
+                        family = "Нема"
+                    elif list_[25] == 1:
+                        family = self.get_data(list_[26], chat_id, 'name')
+                    elif list_[25] == 2:
+                        family = f"Розлучений з {self.get_data(list_[26], chat_id, 'name')}"
                     return f"🐱Ім'я: {list_[4]}\n🧩Хоче гратися: {list_[11]}\n💰Ваш баланс: {list_[19]}\n" \
-                           f"❤️Сім'я: {list_[27]}"
+                           f"❤️Сім'я: {family}"
             elif target == 'all3':
-                return f"Ваші кошенятка\n\n❤️Мама і тато: {self.get_data(list_[32], chat_id, 'name')} " \
-                       f"і {self.get_data(list_[33], chat_id, 'name')}\n🐱Кількість: {list_[28]}\n" \
-                       f"❇️Тип: {list_[31]}\n✨Рівень: {list_[30]}\n"
+                return f"Ваші кошенятка\n\n❤️Мама і тато: {self.get_data(list_[31], chat_id, 'name')} " \
+                       f"і {self.get_data(list_[32], chat_id, 'name')}\n🐱Кількість: {list_[27]}\n" \
+                       f"❇️Тип: {list_[30]}\n✨Рівень: {list_[29]}\n"
             else:
                 return str(list_[a[target]])
