@@ -207,7 +207,7 @@ async def commands(message: types.Message):
                         await bot.send_message(chat_id, "Ви вже розлучені")
                     else:
                         await bot.send_message(chat_id, f"Чи дійсно ви хочете розлучитись з "
-                                                        f"{data.get_data(user_id, chat_id, 'user2_name')}? (Так/Ні)")
+                                                        f"{data.get_data(data.get_data(user_id, chat_id, 'user2_id'), chat_id, 'name')}? (Так/Ні)")
                         data.change_command(user_id, chat_id, "Розлучення")
                 elif message.text == "Завести кошеняток":
                     if int(data.get_data(user_id, chat_id, 'kittens')) != 0:
@@ -267,7 +267,7 @@ async def do(message: types.Message):
                 data.change_command(user_id, chat_id, '')
                 await bot.send_message(chat_id, "Ви відмінили весілля")
             elif data.name_exist(message.text, chat_id) == 1:
-                user2_id = data.married_1(message.text, chat_id)
+                user2_id = data.married_get_user2(message.text, chat_id)
                 if message.text == data.get_data(user_id, chat_id, 'name'):
                     await bot.send_message(chat_id, "Ви не можете одружитись самі на собі")
                 elif int(data.get_data(user2_id, chat_id, 'under_level')) < 15:
@@ -277,8 +277,8 @@ async def do(message: types.Message):
                 else:
                     await bot.send_message(chat_id, f"{message.text}, Ви згодні створити сім'ю з "
                                                     f"{data.get_data(user_id, chat_id, 'name')}? (Так/Ні)")
-                    data.change_command(user_id, chat_id, 'Узгодження1')
-                    data.change_command(user2_id, chat_id, 'Узгодження2')
+                    data.change_command(user_id, chat_id, 'Пропозиція')
+                    data.change_command(user2_id, chat_id, 'Узгодження весілля')
             else:
                 await bot.send_message(chat_id, "У цьому чаті такого котика не існує, спробуйте ще раз")
         elif command == 'Розлучення':
@@ -288,10 +288,10 @@ async def do(message: types.Message):
             elif message.text == 'Так':
                 user1_name = data.get_data(user_id, chat_id, 'name')
                 user2_id = data.get_data(user_id, chat_id, 'user2_id')
-                user2_name = data.get_data(user_id, chat_id, 'user2_name')
+                user2_name = data.get_data(user_id, chat_id, 'family')
                 await bot.send_message(chat_id, f"{user2_name}, Ви згодні розлучитись з "
                                                 f"{user1_name}? (Так/Ні)")
-                data.change_command(user2_id, chat_id, 'Узгодження3')
+                data.change_command(user2_id, chat_id, 'Узгодження розлучення')
         elif command == 'Кошенятка':
             if message.text == 'Ні':
                 data.change_command(user_id, chat_id, '')
@@ -299,17 +299,17 @@ async def do(message: types.Message):
             elif message.text == 'Так':
                 user1_name = data.get_data(user_id, chat_id, 'name')
                 user2_id = data.get_data(user_id, chat_id, 'user2_id')
-                user2_name = data.get_data(user_id, chat_id, 'user2_name')
+                user2_name = data.get_data(user_id, chat_id, 'family')
                 await bot.send_message(chat_id, f"{user2_name}, Ви згодні завести кошеняток з "
                                                 f"{user1_name}? (Так/Ні)")
-                data.change_command(user2_id, chat_id, 'Узгодження4')
-        elif command == 'Узгодження2':
+                data.change_command(user2_id, chat_id, 'Узгодження кошеняток')
+        elif command == 'Узгодження весілля':
             user1_name = data.get_data(user_id, chat_id, 'name')
-            user2_id = data.married_2(chat_id, 'Узгодження1', 'user_id')
-            user2_name = data.married_2(chat_id, 'Узгодження1', 'name')
+            user2_id = data.married_get_data(chat_id, 'Пропозиція', 'user_id')
+            user2_name = data.married_get_data(chat_id, 'Пропозиція', 'name')
             if message.text == 'Так':
-                data.married_3(chat_id, user_id, user2_id, user2_name)
-                data.married_3(chat_id, user2_id, user_id, user1_name)
+                data.married_set_users(chat_id, user_id, user2_id, user2_name)
+                data.married_set_users(chat_id, user2_id, user_id, user1_name)
                 data.change_command(user_id, chat_id, '')
                 data.change_command(user2_id, chat_id, '')
                 await bot.send_message(chat_id, f"{user1_name} тепер офіційно у шлюбі з {user2_name}")
@@ -317,13 +317,13 @@ async def do(message: types.Message):
                 data.change_command(user_id, chat_id, '')
                 data.change_command(user2_id, chat_id, '')
                 await bot.send_message(chat_id, f"{user2_name}, на жаль {user1_name} відмовив(-ла) вам")
-        elif command == 'Узгодження3':
+        elif command == 'Узгодження розлучення':
             user1_name = data.get_data(user_id, chat_id, 'name')
             user2_id = data.get_data(user_id, chat_id, 'user2_id')
-            user2_name = data.get_data(user_id, chat_id, 'user2_name')
+            user2_name = data.get_data(user_id, chat_id, 'family')
             if message.text == 'Так':
-                data.married_break(chat_id, user_id, user2_name)
-                data.married_break(chat_id, user2_id, user1_name)
+                data.married_break(chat_id, user_id)
+                data.married_break(chat_id, user2_id)
                 data.change_command(user_id, chat_id, '')
                 data.change_command(user2_id, chat_id, '')
                 await bot.send_message(chat_id, f"{user1_name} і {user2_name} більше не у шлюбі")
@@ -331,10 +331,10 @@ async def do(message: types.Message):
                 data.change_command(user_id, chat_id, '')
                 data.change_command(user2_id, chat_id, '')
                 await bot.send_message(chat_id, f"{user1_name}, на жаль {user2_name} відмовив(-ла) вам")
-        elif command == 'Узгодження4':
+        elif command == 'Узгодження кошеняток':
             user1_name = data.get_data(user_id, chat_id, 'name')
             user2_id = data.get_data(user_id, chat_id, 'user2_id')
-            user2_name = data.get_data(user_id, chat_id, 'user2_name')
+            user2_name = data.get_data(user_id, chat_id, 'family')
             if message.text == 'Так':
                 data.kittens(chat_id, user_id, user2_id)
                 data.change_command(user_id, chat_id, '')

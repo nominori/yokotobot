@@ -59,11 +59,13 @@ class Database:
                     job_changes INTEGER NOT NULL DEFAULT 0,
                     married     INTEGER NOT NULL DEFAULT 0,
                     user2_id    INTEGER NOT NULL DEFAULT 0,
-                    user2_name  TEXT    NOT NULL DEFAULT 'Нема',
+                    family      TEXT    NOT NULL DEFAULT 'Нема',
                     kittens     INTEGER NOT NULL DEFAULT 0,
                     kitten_photo   TEXT    NOT NULL DEFAULT '',
                     kitten_level   INTEGER    NOT NULL DEFAULT 1,
-                    kitten_type    TEXT    NOT NULL DEFAULT ''
+                    kitten_type    TEXT    NOT NULL DEFAULT '',
+                    mother_id   INTEGER NOT NULL DEFAULT 0,
+                    father_id   INTEGER NOT NULL DEFAULT 0
                 )
             ''')
             self.conn.commit()
@@ -243,12 +245,12 @@ class Database:
             self.conn.commit()
             self.change_happiness(user_id, chat_id, happiness[clas])
 
-    def married_1(self, name: str, chat_id: int):
+    def married_get_user2(self, name: str, chat_id: int):
         with self.conn:
             return self.c.execute("SELECT user_id FROM user_data WHERE name = ? AND chat_id = ?",
                                   (name, chat_id)).fetchone()[0]
 
-    def married_2(self, chat_id: int, command: str, target: str):
+    def married_get_data(self, chat_id: int, command: str, target: str):
         with self.conn:
             if target == 'name':
                 return self.c.execute("SELECT name FROM user_data WHERE command = ? AND chat_id = ?",
@@ -257,23 +259,21 @@ class Database:
                 return self.c.execute("SELECT user_id FROM user_data WHERE command = ? AND chat_id = ?",
                                       (command, chat_id)).fetchone()[0]
 
-    def married_3(self, chat_id: int, user_id: int, user2_id: int, user2_name: int):
+    def married_set_users(self, chat_id: int, user_id: int, user2_id: int, user2_name: int):
         with self.conn:
             self.c.execute("UPDATE user_data SET married = ? WHERE user_id = ? AND chat_id = ?",
                            (1, user_id, chat_id))
             self.c.execute("UPDATE user_data SET user2_id = ? WHERE user_id = ? AND chat_id = ?",
                            (user2_id, user_id, chat_id))
-            self.c.execute("UPDATE user_data SET user2_name = ? WHERE user_id = ? AND chat_id = ?",
+            self.c.execute("UPDATE user_data SET family = ? WHERE user_id = ? AND chat_id = ?",
                            (user2_name, user_id, chat_id))
 
-    def married_break(self, chat_id: int, user_id: int, user2_name: int):
+    def married_break(self, chat_id: int, user_id: int):
         with self.conn:
             self.c.execute("UPDATE user_data SET married = ? WHERE user_id = ? AND chat_id = ?",
                            (2, user_id, chat_id))
-            self.c.execute("UPDATE user_data SET user2_id = ? WHERE user_id = ? AND chat_id = ?",
-                           (0, user_id, chat_id))
-            self.c.execute("UPDATE user_data SET user2_name = ? WHERE user_id = ? AND chat_id = ?",
-                           (f"Розлучений з {user2_name}", user_id, chat_id))
+            self.c.execute("UPDATE user_data SET family = ? WHERE user_id = ? AND chat_id = ?",
+                           ("Розлучений", user_id, chat_id))
 
     def kittens(self, chat_id: int, user_id: int, user2_id: int):
         with self.conn:
@@ -286,12 +286,20 @@ class Database:
                            (picture, chat_id, user_id, user2_id))
             self.c.execute("UPDATE user_data SET kitten_type = ? WHERE chat_id = ? AND user_id = ? AND user2_id = ?",
                            (a, chat_id, user_id, user2_id))
+            self.c.execute("UPDATE user_data SET mother_id = ? WHERE chat_id = ? AND user_id = ? AND user2_id = ?",
+                           (user_id, chat_id, user_id, user2_id))
+            self.c.execute("UPDATE user_data SET father_id = ? WHERE chat_id = ? AND user_id = ? AND user2_id = ?",
+                           (user2_id, chat_id, user_id, user2_id))
             self.c.execute("UPDATE user_data SET kittens = ? WHERE chat_id = ? AND user_id = ? AND user2_id = ?",
                            (kittens, chat_id, user2_id, user_id))
             self.c.execute("UPDATE user_data SET kitten_photo = ? WHERE chat_id = ? AND user_id = ? AND user2_id = ?",
                            (picture, chat_id, user2_id, user_id))
             self.c.execute("UPDATE user_data SET kitten_type = ? WHERE chat_id = ? AND user_id = ? AND user2_id = ?",
                            (a, chat_id, user2_id, user_id))
+            self.c.execute("UPDATE user_data SET mother_id = ? WHERE chat_id = ? AND user_id = ? AND user2_id = ?",
+                           (user2_id, chat_id, user2_id, user_id))
+            self.c.execute("UPDATE user_data SET father_id = ? WHERE chat_id = ? AND user_id = ? AND user2_id = ?",
+                           (user_id, chat_id, user2_id, user_id))
             self.conn.commit()
 
     def change_all_feed(self):
@@ -398,8 +406,9 @@ class Database:
                  'hungry': 9, 'feed_limit': 10, 'wanna_play': 11, 'not_play_times': 12, 'happiness': 13,
                  'zero_times': 14, 'health': 15, 'job': 16, 'job_status': 17, 'job_hours': 18, 'money': 19,
                  'command': 20, 'name_sets': 21, 'kill_ever': 22, 'alive': 23, 'job_changes': 24, 'married': 25,
-                 'user2_id': 26, 'user2_name': 27, 'kittens': 28, 'kitten_photo': 29, 'kitten_level': 30, 'kitten_type': 31}
-            list_ = self.c.execute("SELECT * FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone()
+                 'user2_id': 26, 'family': 27, 'kittens': 28, 'kitten_photo': 29, 'kitten_level': 30,
+                 'kitten_type': 31, 'mother_id': 32, 'father_id': 33}
+            list_ = list(self.c.execute("SELECT * FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone())
             if target == 'all1':
                 if self.get_data(user_id, chat_id, 'level') == 'Кошенятко':
                     return f"🐱Ім'я: {list_[4]}\n🧶Статус: {list_[5]}\n✨Рівень: {list_[6]}/50\n" \
@@ -419,10 +428,15 @@ class Database:
                 elif 5 <= int(self.get_data(user_id, chat_id, 'under_level')) < 15:
                     return f"🐱Ім'я: {list_[4]}\n🧩Хоче гратися: {list_[11]}\n💰Ваш баланс: {list_[19]}\n"
                 elif int(self.get_data(user_id, chat_id, 'under_level')) >= 15:
+                    if list_[27] == 'Розлучений':
+                        list_[27] = f"Розлучений з {self.get_data(list_[26], chat_id, 'name')}"
+                    elif list_[27] not in ['Розлучений', 'Нема']:
+                        list_[27] = self.get_data(list_[26], chat_id, 'name')
                     return f"🐱Ім'я: {list_[4]}\n🧩Хоче гратися: {list_[11]}\n💰Ваш баланс: {list_[19]}\n" \
                            f"❤️Сім'я: {list_[27]}"
             elif target == 'all3':
-                return f"Ваші кошенятка\n\n❤️Тато і мама: {list_[4]} і {list_[27]}\n🐱Кількість: {list_[28]}\n" \
+                return f"Ваші кошенятка\n\n❤️Мама і тато: {self.get_data(list_[32], chat_id, 'name')} " \
+                       f"і {self.get_data(list_[33], chat_id, 'name')}\n🐱Кількість: {list_[28]}\n" \
                        f"❇️Тип: {list_[31]}\n✨Рівень: {list_[30]}\n"
             else:
                 return str(list_[a[target]])
