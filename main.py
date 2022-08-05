@@ -23,7 +23,7 @@ rz = {0: 'разів', 1: 'раз', 2: 'раза', 3: 'рази', 4: 'рази',
 
 
 async def send_data1(user_id, chat_id):
-    photo = open(data.get_data(user_id, chat_id, 'photo'), 'rb')
+    photo = open("photos/" + data.get_data(user_id, chat_id, 'photo'), 'rb')
     await bot.send_photo(chat_id, photo, caption=data.get_data(user_id, chat_id, 'cat_data'), reply_markup=CatData)
 
 
@@ -225,7 +225,7 @@ async def commands(message: types.Message):
                     if data.get_data(user_id, chat_id, 'kittens') == 0:
                         await bot.send_message(chat_id, "Спочатку ви маєте завести кошеняток")
                     else:
-                        photo = open(data.get_data(user_id, chat_id, 'kitten_photo'), 'rb')
+                        photo = open("photos/" + data.get_data(user_id, chat_id, 'kitten_photo'), 'rb')
                         await bot.send_photo(chat_id, photo, caption=data.get_data(user_id, chat_id, 'kitten_data'))
         else:
             await bot.send_message(chat_id, "Ти маєш спочатку отримати кота!", reply_markup=NewCat)
