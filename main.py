@@ -1,7 +1,7 @@
 from aiogram import Bot, Dispatcher, executor, types
 import asyncio
 import logging
-from config import TOKEN, Bot_ID
+from config import *
 from database import Database
 from Buttons import *
 
@@ -12,8 +12,7 @@ data = Database()
 
 text = {'/start': "Щоб нарешті отримати свого котика, додай мене в групу з друзями і надай усі права!",
         '/commands': "Базові команди\n<u><i><b>Хочу котика</b></i></u> - отримати милого кітика\n"
-                     "<u><i><b>Мій котик</b></i></u> - данні вашого котика\n"
-                     "<u><i><b>Котик інфо</b></i></u> - інформація про котика\n"
+                     "<u><i><b>Мій котик</b></i></u> і <u><i><b>Котик інфо</b></i></u> - інформація про котика\n"
                      "<u><i><b>Змінити ім'я</b></i></u> - дати котику нове ім'я\n"
                      "<u><i><b>Нагодувати</b></i></u> - нагодувати\n"
                      "<u><i><b>Погратись</b></i></u> - погратись\n",
@@ -114,21 +113,21 @@ async def commands(message: types.Message):
                     if feed_limit == 0:
                         await bot.send_message(chat_id, "Ви погодували котика максимальну кількість раз")
                     else:
-                        a1 = data.get_data(user_id, chat_id, 'under_level')
-                        b1 = data.get_data(user_id, chat_id, 'level')
+                        under_level_before = data.get_data(user_id, chat_id, 'under_level')
+                        level_before = data.get_data(user_id, chat_id, 'level')
                         data.change_hungry(user_id, chat_id)
-                        a2 = data.get_data(user_id, chat_id, 'under_level')
-                        b2 = data.get_data(user_id, chat_id, 'level')
+                        under_level_after = data.get_data(user_id, chat_id, 'under_level')
+                        level_after = data.get_data(user_id, chat_id, 'level')
                         feed_limit = data.get_data(user_id, chat_id, 'feed_limit')
                         await bot.send_message(chat_id, f"Ви погодували котика! (Можна погодувати ще "
                                                         f"{feed_limit} {rz[feed_limit]})")
-                        if b1 != b2:
-                            await bot.send_message(chat_id, "Статус підвищенно!")
-                        elif a2 > a1:
+                        if level_before != level_after:
+                            await bot.send_message(chat_id, "Статус і рівень підвищенно!")
+                        elif under_level_before < under_level_after:
                             await bot.send_message(chat_id, "Рівень підвищенно!")
                 elif message.text in [f'{Bot_ID} Погратись', 'Погратись']:
                     if data.get_data(user_id, chat_id, 'wanna_play') == 'Ні':
-                        await bot.send_message(chat_id, "Котик не хоче гратися")
+                        await bot.send_message(chat_id, f"{data.get_data(user_id, chat_id, 'name')} не хоче гратися")
                     else:
                         data.change_wanna_play(user_id, chat_id)
                         await bot.send_message(chat_id, f"{data.get_data(user_id, chat_id, 'name')} грається")
@@ -354,12 +353,12 @@ async def job(call: types.CallbackQuery):
             'Грайливий кітик': ['Банкір', 'Вчений', 'Менеджер', 'Кухар'],
             'Бойовий кітик': ['Бізнесмен', 'Будівельник', 'Військовий', 'Шпигун', 'Льотчик'],
             'Кітик гурман': ['Офіціант', 'Вчений', 'Сомільє', 'Інвестор', 'Журналіст']}
-    extra_job = ['Банкір', 'Шпигун', 'Програміст', 'Менеджер', 'Інвестор', 'Космонавт']
+    extra_jobs = ['Банкір', 'Шпигун', 'Програміст', 'Менеджер', 'Інвестор', 'Космонавт']
     a = data.get_data(call.from_user.id, call.message.chat.id, 'class')
     if data.get_data(call.from_user.id, call.message.chat.id, 'under_level') >= 5 and \
             (data.get_data(call.from_user.id, call.message.chat.id, 'job') == 'Нема' or
              data.get_data(call.from_user.id, call.message.chat.id, 'job_changes') > 0) and \
-            ((a in classes and call.data[4:] in jobs[a]) or (a not in classes and call.data[4:] in extra_job)):
+            ((a in classes and call.data[4:] in jobs[a]) or (a not in classes and call.data[4:] in extra_jobs)):
         await bot.delete_message(call.message.chat.id, call.message.message_id)
         data.change_job(call.from_user.id, call.message.chat.id, call.data[4:])
         data.change_job_changes(call.from_user.id, call.message.chat.id, '-')
