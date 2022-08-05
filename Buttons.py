@@ -1,40 +1,27 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
+job_list = ['Бізнесмен', 'Банкір', 'Офіціант', 'Будівельник', 'Військовий', 'Шпигун', 'Психолог', 'Програміст',
+            'Вчений', 'Сомільє', 'Менеджер', 'Інвестор', 'Кухар', 'Льотчик', 'Журналіст', 'Космонавт']
+job_buttons = []
+switch_inline_query = ['Мій котик', 'Новий котик', 'Мої кошенятка', 'Нагодувати', 'Погратись', 'Відправити працювати']
+cat_buttons = []
+
+for i in range(16):
+    job_buttons.append(InlineKeyboardButton(text=job_list[i], callback_data='job_'+job_list[i]))
+for i in range(6):
+    cat_buttons.append(InlineKeyboardButton(text=switch_inline_query[i], switch_inline_query_current_chat=switch_inline_query[i]))
 AddGroupButton = InlineKeyboardButton(text='Додати в групу', url='http://t.me/yokotobot?startgroup=test')
-MyCatButton = InlineKeyboardButton(text='Мій котик', switch_inline_query_current_chat='Мій котик')
-NewCatButton = InlineKeyboardButton(text='Новий котик', switch_inline_query_current_chat='Хочу котика')
-PlayCatButton = InlineKeyboardButton(text='Погратись', switch_inline_query_current_chat='Погратись')
-FeedCatButton = InlineKeyboardButton(text='Нагодувати', switch_inline_query_current_chat='Нагодувати')
-JobCatButton = InlineKeyboardButton(text='Відправити працювати', switch_inline_query_current_chat='Відправити працювати')
 CatDataButton = InlineKeyboardButton(text='Інфо', switch_inline_query_current_chat='Котик інфо')
-KittensButton = InlineKeyboardButton(text='Мої кошенятка', switch_inline_query_current_chat='Мої кошенятка')
-
-JobButton1 = InlineKeyboardButton(text='Бізнесмен', callback_data='job_Бізнесмен')
-JobButton2 = InlineKeyboardButton(text='Банкір', callback_data='job_Банкір')
-JobButton3 = InlineKeyboardButton(text='Офіціант', callback_data='job_Офіціант')
-JobButton4 = InlineKeyboardButton(text='Будівельник', callback_data='job_Будівельник')
-JobButton5 = InlineKeyboardButton(text='Військовий', callback_data='job_Військовий')
-JobButton6 = InlineKeyboardButton(text='Шпигун', callback_data='job_Шпигун')
-JobButton7 = InlineKeyboardButton(text='Психолог', callback_data='job_Психолог')
-JobButton8 = InlineKeyboardButton(text='Програміст', callback_data='job_Програміст')
-JobButton9 = InlineKeyboardButton(text='Вчений', callback_data='job_Вчений')
-JobButton10 = InlineKeyboardButton(text='Сомільє', callback_data='job_Сомільє')
-JobButton11 = InlineKeyboardButton(text='Менеджер', callback_data='job_Менеджер')
-JobButton12 = InlineKeyboardButton(text='Інвестор', callback_data='job_Інвестор')
-JobButton13 = InlineKeyboardButton(text='Кухар', callback_data='job_Кухар')
-JobButton14 = InlineKeyboardButton(text='Льотчик', callback_data='job_Льотчик')
-JobButton15 = InlineKeyboardButton(text='Журналіст', callback_data='job_Журналіст')
-JobButton16 = InlineKeyboardButton(text='Космонавт', callback_data='job_Космонавт')
-
 
 AddGroup = InlineKeyboardMarkup().add(AddGroupButton)
-MyCat = InlineKeyboardMarkup().add(MyCatButton)
-NewCat = InlineKeyboardMarkup().add(NewCatButton)
+MyCat = InlineKeyboardMarkup().add(cat_buttons[0])
+NewCat = InlineKeyboardMarkup().add(cat_buttons[1])
+KittensData = InlineKeyboardMarkup().add(cat_buttons[2])
 CatData = InlineKeyboardMarkup().add(CatDataButton)
-CatJob = InlineKeyboardMarkup(row_width=2).add(JobButton1, JobButton2, JobButton3, JobButton4)
-CatJob1 = InlineKeyboardMarkup(row_width=2).add(JobButton1, JobButton3, JobButton7, JobButton8)
-CatJob2 = InlineKeyboardMarkup(row_width=2).add(JobButton2, JobButton9, JobButton11, JobButton13)
-CatJob3 = InlineKeyboardMarkup(row_width=2).add(JobButton14, JobButton4, JobButton5, JobButton6, JobButton1)
-CatJob4 = InlineKeyboardMarkup(row_width=2).add(JobButton10, JobButton12, JobButton3, JobButton15, JobButton9)
-CatJob5 = InlineKeyboardMarkup(row_width=2).add(JobButton12, JobButton8, JobButton6, JobButton16, JobButton11, JobButton2)
-KittensMenu = InlineKeyboardMarkup().add(KittensButton)
+CatJob = InlineKeyboardMarkup(row_width=2).add(job_buttons[0], job_buttons[1], job_buttons[2], job_buttons[3])
+CatJob1 = InlineKeyboardMarkup(row_width=2).add(job_buttons[0], job_buttons[2], job_buttons[6], job_buttons[7])
+CatJob2 = InlineKeyboardMarkup(row_width=2).add(job_buttons[1], job_buttons[8], job_buttons[10], job_buttons[12])
+CatJob3 = InlineKeyboardMarkup(row_width=2).add(job_buttons[0], job_buttons[3], job_buttons[4], job_buttons[5], job_buttons[13])
+CatJob4 = InlineKeyboardMarkup(row_width=2).add(job_buttons[9], job_buttons[11], job_buttons[2], job_buttons[14], job_buttons[8])
+CatJob5 = InlineKeyboardMarkup(row_width=2).add(job_buttons[1], job_buttons[5], job_buttons[7],
+                                                job_buttons[10], job_buttons[11], job_buttons[15])
