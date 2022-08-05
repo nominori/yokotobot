@@ -12,7 +12,7 @@ data = Database()
 
 text = {'/start': "Щоб нарешті отримати свого котика, додай мене в групу з друзями і надай усі права!",
         '/commands': "Базові команди\n<u><i><b>Хочу котика</b></i></u> - отримати милого кітика\n"
-                     "<u><i><b>Мій котик</b></i></u> і <u><i><b>Котик інфо</b></i></u> - інформація про котика\n"
+                     "<u><i><b>Мій котик</b></i></u> - інформація про котика\n"
                      "<u><i><b>Змінити ім'я</b></i></u> - дати котику нове ім'я\n"
                      "<u><i><b>Нагодувати</b></i></u> - нагодувати\n"
                      "<u><i><b>Погратись</b></i></u> - погратись\n",
@@ -31,19 +31,29 @@ extra_jobs = ['Банкір', 'Шпигун', 'Програміст', 'Мене�
 
 
 async def send_cat_data(user_id, chat_id):
+    cat_data = InlineKeyboardMarkup(row_width=2).add(cat_buttons[2])
+    if data.get_data(user_id, chat_id, 'under_level') >= 5:
+        cat_data.add(cat_buttons[7])
     photo = open("photos/" + data.get_data(user_id, chat_id, 'photo'), 'rb')
-    await bot.send_photo(chat_id, photo, caption=data.get_data(user_id, chat_id, 'cat_data'), reply_markup=CatInfo)
+    await bot.send_photo(chat_id, photo, caption=data.get_data(user_id, chat_id, 'cat_data'), reply_markup=cat_data)
 
 
 async def send_cat_info(user_id, chat_id):
-    action_cat = InlineKeyboardMarkup()
+    action_cat = InlineKeyboardMarkup(row_width=2)
     if data.get_data(user_id, chat_id, 'feed_limit') > 0:
         action_cat.add(cat_buttons[4])
     if data.get_data(user_id, chat_id, 'wanna_play') == 'Так':
         action_cat.add(cat_buttons[5])
-    if data.get_data(user_id, chat_id, 'job_status') == 'Не працює':
-        action_cat.add(cat_buttons[6])
     await bot.send_message(chat_id, data.get_data(user_id, chat_id, 'cat_info'), reply_markup=action_cat)
+
+
+async def send_cat_job(user_id, chat_id):
+    action_cat = InlineKeyboardMarkup()
+    if data.get_data(user_id, chat_id, 'job') == 'Нема':
+        action_cat.add(cat_buttons[8])
+    elif data.get_data(user_id, chat_id, 'job_status') == 'Не працює':
+        action_cat.add(cat_buttons[6])
+    await bot.send_message(chat_id, data.get_data(user_id, chat_id, 'cat_job'), reply_markup=action_cat)
 
 
 @dp.message_handler(commands=['start', 'commands', 'manual'])
@@ -85,7 +95,8 @@ async def add(message: types.Message):
                           'Відправити працювати', f'{Bot_ID} Відправити працювати', 'Відправити у відпустку',
                           'Котик інфо', f'{Bot_ID} Котик інфо', 'Воскресити мого котика',
                           'Вбити котика', 'Змінити роботу', "Завести сім'ю", "Розлучитись",
-                          "Завести кошеняток", "Мої кошенятка", f"{Bot_ID} Мої кошенятка"])
+                          "Завести кошеняток", "Мої кошенятка", f"{Bot_ID} Мої кошенятка", 'Поїхати у відпустку',
+                          'Робота котика', f"{Bot_ID} Робота котика"])
 async def commands(message: types.Message):
     user_id, chat_id = message.from_user.id, message.chat.id
     if message.chat.type in ['group', 'supergroup']:
@@ -102,18 +113,18 @@ async def commands(message: types.Message):
             if kill_ever == 2:
                 await bot.send_message(chat_id, "Вбивцям не давали слова😡")
             elif kill_ever == 3:
-                if message.text == 'Воскресити мого котика':
-                    alive = data.get_data(user_id, chat_id, 'alive')
-                    if alive == 0:
+                alive = data.get_data(user_id, chat_id, 'alive')
+                if alive == 0:
+                    if message.text == 'Воскресити мого котика':
                         data.alive(user_id, chat_id)
                         await bot.send_message(chat_id, "Ваш котик буде жити, але не забувайте його доглядати, "
                                                         "бо більше можливості воскресити у вас не буде")
                     else:
-                        await bot.send_message(chat_id, "На жаль, вашого котика більше не можна воскресити")
+                        await bot.send_message(chat_id, "На жаль, ваш котик вмер з голоду, якщо ви хочете воскресити "
+                                                        "його пропишіть <u><i><b>Воскресити мого котика</b></i></u>",
+                                               parse_mode='HTML')
                 else:
-                    await bot.send_message(chat_id, "На жаль, ваш котик вмер з голоду, якщо ви хочете воскресити "
-                                                    "його пропишіть <u><i><b>Воскресити мого котика</b></i></u>",
-                                           parse_mode='HTML')
+                    await bot.send_message(chat_id, "На жаль, вашого котика більше не можна воскресити")
             else:
                 if message.text == "Змінити ім'я":
                     name_sets = data.get_data(user_id, chat_id, 'name_sets')
@@ -126,6 +137,8 @@ async def commands(message: types.Message):
                     await send_cat_data(user_id, chat_id)
                 elif message.text in ['Котик інфо', f'{Bot_ID} Котик інфо']:
                     await send_cat_info(user_id, chat_id)
+                elif message.text in ['Робота котика', f"{Bot_ID} Робота котика"]:
+                    await send_cat_job(user_id, chat_id)
                 elif message.text in [f'{Bot_ID} Нагодувати', 'Нагодувати']:
                     feed_limit = data.get_data(user_id, chat_id, 'feed_limit')
                     if feed_limit == 0:
@@ -158,7 +171,7 @@ async def commands(message: types.Message):
                                                         "'Tак, я хочу вбити свого котика' якщо дійсно хочете)")
                     else:
                         await bot.send_message(chat_id, "Ваш кіт і так мертвий")
-                elif message.text == 'Обрати професію':
+                elif message.text in ['Обрати професію', f'{Bot_ID} Обрати професію']:
                     if under_level >= 5:
                         if job == 'Нема':
                             if clas in ['Домашній кітик', 'Сплячий кітик', 'Грайливий кітик',
@@ -177,37 +190,34 @@ async def commands(message: types.Message):
                         job_status = data.get_data(user_id, chat_id, 'job_status')
                         if job_status == 'Не працює':
                             data.change_job_status(user_id, chat_id)
-                            await bot.send_message(chat_id, "Ваш котик пішов працювати! Він повернеться додому через 2 години.")
+                            await bot.send_message(chat_id, "Ваш котик пішов працювати! Він повернеться додому через 4 години.")
                         else:
                             await bot.send_message(chat_id, "Ваш котик вже працює!")
                 elif message.text == 'Змінити роботу':
-                    if job != 'Нема':
-                        if under_level < 15:
-                            await bot.send_message(chat_id, "Спочатку ваш котик має досягнути 15 рівня!")
-                        else:
-                            job_changes = data.get_data(user_id, chat_id, 'job_changes')
-                            if job_changes > 0:
-                                if clas in ['Домашній кітик', 'Сплячий кітик', 'Грайливий кітик',
-                                            'Бойовий кітик', 'Кітик гурман']:
-                                    await bot.send_message(chat_id, "Оберіть нову роботу", reply_markup=jobs_choice[clas])
-                                else:
-                                    await bot.send_message(chat_id, "Оберіть нову роботу", reply_markup=CatJobs5)
-                            else:
-                                if 15 <= under_level < 25:
-                                    await bot.send_message(chat_id, "Ви вже змінили роботу, наступний раз можна "
-                                                                    "буде це зробити після 25 рівня!")
-                                elif 25 <= under_level < 35:
-                                    await bot.send_message(chat_id, "Ви вже змінили роботу, наступний раз можна "
-                                                                    "буде це зробити після 35 рівня!")
-                                elif 35 <= under_level < 45:
-                                    await bot.send_message(chat_id, "Ви вже змінили роботу, наступний раз можна "
-                                                                    "буде це зробити після 45 рівня!")
-                                else:
-                                    await bot.send_message(chat_id, "Ви більше не можете змінювати роботу")
-                    else:
+                    if job == 'Нема':
                         await bot.send_message(chat_id, "У вас немає роботи. Спочатку почніть працювати!")
-                elif message.text == 'Відправити у відпустку':
-                    pass
+                    elif under_level < 15:
+                        await bot.send_message(chat_id, "Спочатку ваш котик має досягнути 15 рівня!")
+                    else:
+                        job_changes = data.get_data(user_id, chat_id, 'job_changes')
+                        if job_changes > 0:
+                            if clas in ['Домашній кітик', 'Сплячий кітик', 'Грайливий кітик',
+                                        'Бойовий кітик', 'Кітик гурман']:
+                                await bot.send_message(chat_id, "Оберіть нову роботу", reply_markup=jobs_choice[clas])
+                            else:
+                                await bot.send_message(chat_id, "Оберіть нову роботу", reply_markup=CatJobs5)
+                        else:
+                            if 15 <= under_level < 25:
+                                await bot.send_message(chat_id, "Ви вже змінили роботу, наступний раз можна "
+                                                                "буде це зробити після 25 рівня!")
+                            elif 25 <= under_level < 35:
+                                await bot.send_message(chat_id, "Ви вже змінили роботу, наступний раз можна "
+                                                                "буде це зробити після 35 рівня!")
+                            elif 35 <= under_level < 45:
+                                await bot.send_message(chat_id, "Ви вже змінили роботу, наступний раз можна "
+                                                                "буде це зробити після 45 рівня!")
+                            else:
+                                await bot.send_message(chat_id, "Ви більше не можете змінювати роботу")
                 elif message.text == "Завести сім'ю":
                     if under_level < 15:
                         await bot.send_message(chat_id, "Спочатку ваш котик має досягнути 15 рівня!")
@@ -246,6 +256,16 @@ async def commands(message: types.Message):
                     else:
                         photo = open("photos/" + data.get_data(user_id, chat_id, 'kitten_photo'), 'rb')
                         await bot.send_photo(chat_id, photo, caption=data.get_data(user_id, chat_id, 'kitten_data'))
+                elif message.text == 'Поїхати у відпустку':
+                    job_hours = data.get_data(user_id, chat_id, 'job_hours')
+                    if job == 'Нема':
+                        await bot.send_message(chat_id, "У вас немає роботи. Спочатку почніть працювати!")
+                    elif job_hours < 100:
+                        await bot.send_message(chat_id, "Ви ще не відпрацювали 100 годин")
+                    else:
+                        data.change_command(user_id, chat_id, 'Відпустка')
+                        await bot.send_message(chat_id, "На скільки довго ви хочете поїхати? Напишіть кількість днів "
+                                                        "(максимум 14)")
         else:
             await bot.send_message(chat_id, "Ти маєш спочатку отримати кота!", reply_markup=NewCat)
     else:
@@ -269,7 +289,7 @@ async def do(message: types.Message):
                 await bot.send_message(chat_id, "Ім'я занадто довге, спробуйте ще раз")
             elif message.text == data.get_data(user_id, chat_id, 'name'):
                 await bot.send_message(chat_id, "Ваш котик вже має це ім'я, спробуйте ще раз")
-            elif data.name_exist(message.text, chat_id) == 1:
+            elif data.name_exist(chat_id, message.text) == 1:
                 await bot.send_message(chat_id, "Ім'я вже зайнято, спробуйте ще раз")
             elif user1_name == 'Ваш Кітик':
                 data.set_name(user_id, chat_id, message.text)
@@ -291,8 +311,8 @@ async def do(message: types.Message):
             if message.text == 'Відмінити весілля':
                 data.change_command(user_id, chat_id, '')
                 await bot.send_message(chat_id, "Ви відмінили весілля")
-            elif data.name_exist(message.text, chat_id) == 1:
-                user2_id = data.married_get_user2(message.text, chat_id)
+            elif data.name_exist(chat_id, message.text) == 1:
+                user2_id = data.married_get_user2(chat_id, message.text)
                 if message.text == data.get_data(user_id, chat_id, 'name'):
                     await bot.send_message(chat_id, "Ви не можете одружитись самі на собі")
                 elif data.get_data(user2_id, chat_id, 'under_level') < 15:
@@ -355,6 +375,19 @@ async def do(message: types.Message):
                 data.change_command(user_id, chat_id, '')
                 data.change_command(user2_id, chat_id, '')
                 await bot.send_message(chat_id, f"{user1_name}, на жаль {user2_name} відмовив(-ла) вам")
+        elif command == 'Відпустка':
+            if message.text not in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']:
+                await bot.send_message(chat_id, "Не вірно введені данні, спробуйте ще раз")
+            else:
+                data.vacation_days(user_id, chat_id, int(message.text))
+                data.change_command(user_id, chat_id, 'Місце відпустки')
+                await bot.send_message(chat_id, "Куди ви хочете поїхати?")
+        elif command == 'Місце відпустки':
+            data.vacation(user_id, chat_id, message.text)
+            days = int(data.get_data(user_id, chat_id, 'vacation_hours')/24)
+            place = data.get_data(user_id, chat_id, 'vacation_place')
+            data.change_command(user_id, chat_id, '')
+            await bot.send_message(chat_id, f"{user1_name} поїхав у відпустку на {days} днів у {place}")
 
 
 @dp.callback_query_handler(text_contains='job')
@@ -375,14 +408,24 @@ async def job_choice(call: types.CallbackQuery):
 async def allways():
     while True:
         await asyncio.sleep(3600)
-        data.change_all_feed()
-        data.change_all_wanna_play()
-        data.change_all_hungry()
-        data.change_all_working()
+        data.all_feed()
+        data.all_wanna_play()
+        data.all_hungry()
+        data.all_working()
         await asyncio.sleep(3600)
-        data.change_all_hungry()
-        data.change_all_working()
+        data.all_hungry()
+        data.all_working()
         data.not_doing()
+        await asyncio.sleep(3600)
+        data.all_feed()
+        data.all_wanna_play()
+        data.all_hungry()
+        data.all_working()
+        await asyncio.sleep(3600)
+        data.all_hungry()
+        data.all_working()
+        data.not_doing()
+        data.all_stop_working()
 
 if __name__ == '__main__':
     data.init_db()
