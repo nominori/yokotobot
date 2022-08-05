@@ -98,7 +98,7 @@ class Database:
             else:
                 return 0
 
-    def change_name_sets(self, user_id: int, chat_id: int, name: str):
+    def set_name(self, user_id: int, chat_id: int, name: str):
         with self.conn:
             self.c.execute("UPDATE user_data SET name = ? WHERE user_id = ? AND chat_id = ?", (name, user_id, chat_id))
             a = self.c.execute("SELECT name_sets FROM user_data WHERE user_id = ? AND chat_id = ?",
@@ -391,8 +391,8 @@ class Database:
                         else:
                             self.c.execute("UPDATE user_data SET health = ? WHERE id = ?", ('Мертвий', i))
                             self.c.execute("UPDATE user_data SET kill_ever = ? WHERE id = ?", (3, i))
-                if self.c.execute("SELECT job_status FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'На роботі':
-                    self.c.execute("UPDATE user_data SET job_status = ? WHERE id = ?", ('Не працює', i))
+                    if self.c.execute("SELECT job_status FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'На роботі':
+                        self.c.execute("UPDATE user_data SET job_status = ? WHERE id = ?", ('Не працює', i))
             self.conn.commit()
 
     def get_data(self, user_id: int, chat_id: int, target: str):
@@ -424,7 +424,6 @@ class Database:
                     return f"🐱Ім'я: {list_[4]}\n🧩Хоче гратися: {list_[11]}\n🛠Робота: {list_[17]}\n" \
                            f"💰Ваш баланс: {list_[19]}\n"
                 elif int(self.get_data(user_id, chat_id, 'under_level')) >= 15:
-                    family = ''
                     if list_[25] == 0:
                         family = "Нема"
                     elif list_[25] == 1:

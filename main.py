@@ -19,8 +19,8 @@ text = {'/start': "Щоб нарешті отримати свого котик�
         '/manual': "Усі команди і тонкощі: <a>https://telegra.ph/Kotobot-Manual-08-03</a>"}
 rz = {0: 'разів', 1: 'раз', 2: 'раза', 3: 'рази', 4: 'рази', 5: 'раз',
       6: 'раз', 7: 'раз', 8: 'раз', 9: 'раз', 10: 'раз'}
-jobs_choice = {'Домашній кітик': CatJob, 'Сплячий кітик': CatJob1,
-               'Грайливий кітик': CatJob2, 'Бойовий кітик': CatJob3, 'Кітик гурман': CatJob4}
+jobs_choice = {'Домашній кітик': CatJobs, 'Сплячий кітик': CatJobs1,
+               'Грайливий кітик': CatJobs2, 'Бойовий кітик': CatJobs3, 'Кітик гурман': CatJobs4}
 classes = ['Домашній кітик', 'Сплячий кітик', 'Грайливий кітик', 'Бойовий кітик', 'Кітик гурман']
 jobs = {'Домашній кітик': ['Бізнесмен', 'Банкір', 'Офіціант', 'Будівельник'],
         'Сплячий кітик': ['Бізнесмен', 'Офіціант', 'Психолог', 'Програміст'],
@@ -30,19 +30,19 @@ jobs = {'Домашній кітик': ['Бізнесмен', 'Банкір', '�
 extra_jobs = ['Банкір', 'Шпигун', 'Програміст', 'Менеджер', 'Інвестор', 'Космонавт']
 
 
-async def send_data1(user_id, chat_id):
+async def send_cat_data(user_id, chat_id):
     photo = open("photos/" + data.get_data(user_id, chat_id, 'photo'), 'rb')
-    await bot.send_photo(chat_id, photo, caption=data.get_data(user_id, chat_id, 'cat_data'), reply_markup=CatData)
+    await bot.send_photo(chat_id, photo, caption=data.get_data(user_id, chat_id, 'cat_data'), reply_markup=CatInfo)
 
 
-async def send_data2(user_id, chat_id):
+async def send_cat_info(user_id, chat_id):
     action_cat = InlineKeyboardMarkup()
     if data.get_data(user_id, chat_id, 'feed_limit') > 0:
-        action_cat.add(cat_buttons[3])
-    if data.get_data(user_id, chat_id, 'wanna_play') == 'Так':
         action_cat.add(cat_buttons[4])
-    if data.get_data(user_id, chat_id, 'job_status') == 'Не працює':
+    if data.get_data(user_id, chat_id, 'wanna_play') == 'Так':
         action_cat.add(cat_buttons[5])
+    if data.get_data(user_id, chat_id, 'job_status') == 'Не працює':
+        action_cat.add(cat_buttons[6])
     await bot.send_message(chat_id, data.get_data(user_id, chat_id, 'cat_info'), reply_markup=action_cat)
 
 
@@ -123,9 +123,9 @@ async def commands(message: types.Message):
                     else:
                         await bot.send_message(chat_id, "Ви більше не можете змінювати ім'я свого котика")
                 elif message.text in ['Мій котик', f'{Bot_ID} Мій котик']:
-                    await send_data1(user_id, chat_id)
+                    await send_cat_data(user_id, chat_id)
                 elif message.text in ['Котик інфо', f'{Bot_ID} Котик інфо']:
-                    await send_data2(user_id, chat_id)
+                    await send_cat_info(user_id, chat_id)
                 elif message.text in [f'{Bot_ID} Нагодувати', 'Нагодувати']:
                     feed_limit = data.get_data(user_id, chat_id, 'feed_limit')
                     if feed_limit == 0:
@@ -165,7 +165,7 @@ async def commands(message: types.Message):
                                         'Бойовий кітик', 'Кітик гурман']:
                                 await bot.send_message(chat_id, "Оберіть роботу", reply_markup=jobs_choice[clas])
                             else:
-                                await bot.send_message(chat_id, "Оберіть роботу", reply_markup=CatJob5)
+                                await bot.send_message(chat_id, "Оберіть роботу", reply_markup=CatJobs5)
                         else:
                             await bot.send_message(chat_id, "Ви вже маєте роботу!")
                     else:
@@ -191,7 +191,7 @@ async def commands(message: types.Message):
                                             'Бойовий кітик', 'Кітик гурман']:
                                     await bot.send_message(chat_id, "Оберіть нову роботу", reply_markup=jobs_choice[clas])
                                 else:
-                                    await bot.send_message(chat_id, "Оберіть нову роботу", reply_markup=CatJob5)
+                                    await bot.send_message(chat_id, "Оберіть нову роботу", reply_markup=CatJobs5)
                             else:
                                 if 15 <= under_level < 25:
                                     await bot.send_message(chat_id, "Ви вже змінили роботу, наступний раз можна "
@@ -226,12 +226,15 @@ async def commands(message: types.Message):
                         data.change_command(user_id, chat_id, "Розлучення")
                 elif message.text == "Завести кошеняток":
                     user2_under_level = data.get_data(user2_id, chat_id, 'under_level')
+                    user2_kittens = data.get_data(user2_id, chat_id, 'kittens')
                     if kittens != 0:
                         await bot.send_message(chat_id, "Ви вже маєте кошеняток", reply_markup=KittensData)
                     elif married != 1:
                         await bot.send_message(chat_id, "Ви маєте спочатку завести сім'ю")
                     elif under_level < 20:
                         await bot.send_message(chat_id, "Спочатку ваш котик має досягнути 20 рівня!")
+                    elif user2_kittens != 0:
+                        await bot.send_message(chat_id, "Ваш партнер вже має кошеняток!")
                     elif user2_under_level < 20:
                         await bot.send_message(chat_id, "Ваш партнер має досягнути 20 рівня!")
                     else:
@@ -268,10 +271,14 @@ async def do(message: types.Message):
                 await bot.send_message(chat_id, "Ваш котик вже має це ім'я, спробуйте ще раз")
             elif data.name_exist(message.text, chat_id) == 1:
                 await bot.send_message(chat_id, "Ім'я вже зайнято, спробуйте ще раз")
-            else:
-                data.change_name_sets(user_id, chat_id, message.text)
+            elif user1_name == 'Ваш Кітик':
+                data.set_name(user_id, chat_id, message.text)
                 data.change_command(user_id, chat_id, '')
-                await send_data1(user_id, chat_id)
+                await send_cat_data(user_id, chat_id)
+            else:
+                data.set_name(user_id, chat_id, message.text)
+                data.change_command(user_id, chat_id, '')
+                await bot.send_message(chat_id, f"Ім'я котика змінено на {message.text}.")
         elif command == 'Вбити котика':
             if message.text == 'Tак, я хочу вбити свого котика':
                 data.kill(user_id, chat_id, 'kill')
