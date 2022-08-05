@@ -61,7 +61,7 @@ async def add(message: types.Message):
                 await bot.send_message(chat_id, "Ти вже маєш кітика!", reply_markup=MyCat)
         else:
             data.add_user(user_id, chat_id)
-            photo = open(data.get_data(user_id, chat_id, 'photo'), 'rb')
+            photo = open("photos/" + data.get_data(user_id, chat_id, 'photo'), 'rb')
             await bot.send_photo(chat_id, photo, caption=f"Ви отримали нового кітика🎁")
             await bot.send_message(chat_id, f"Напиши ім'я вашого котика")
             data.change_command(user_id, chat_id, "Нове ім'я")
