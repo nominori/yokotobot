@@ -29,7 +29,7 @@ class Database:
     def init_db(self, force: bool = False):
         with self.conn:
             if force:
-                self.c.execute('DROP TABLE IF NOT EXISTS user_data')
+                self.c.execute('DROP TABLE IF EXISTS user_data')
             self.c.execute('''
                 CREATE TABLE IF NOT EXISTS user_data (
                     id          INTEGER PRIMARY KEY,
