@@ -456,7 +456,6 @@ async def job_choice(call: types.CallbackQuery):
 
 async def allways():
     while True:
-        data.all_working()
         await asyncio.sleep(3600)
         data.all_feed()
         data.all_wanna_play()
