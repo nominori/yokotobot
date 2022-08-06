@@ -19,6 +19,7 @@ kitten_types = {'Звичайний💙'+'Звичайний💙': ['Звича�
                 'Ультрарідкісний💜'+'Ультрарідкісний💜': ['Ультрарідкісний💜'],
                 'Ультрарідкісний💜'+'Легендарний❤️': ['Ультрарідкісний💜', 'Легендарний❤️'],
                 'Легендарний❤️'+'Легендарний❤️': ['Легендарний❤️']}
+apartment_photos = ['a1', 'a2', 'a3', 'a4']
 
 
 class Database:
@@ -291,12 +292,12 @@ class Database:
             self.c.execute("UPDATE user_data SET job_status = ? WHERE user_id = ? AND chat_id = ?",
                            ('На пенсії', user_id, chat_id))
 
-    def married_get_user2(self, chat_id: int, name):
+    def get_user2_id(self, chat_id: int, name):
         with self.conn:
             return self.c.execute("SELECT user_id FROM user_data WHERE name = ? AND chat_id = ?",
                                   (name, chat_id)).fetchone()[0]
 
-    def married_get_data(self, chat_id: int, command: str, target: str):
+    def get_data_where_command(self, chat_id: int, command: str, target: str):
         with self.conn:
             if target == 'name':
                 return self.c.execute("SELECT name FROM user_data WHERE command = ? AND chat_id = ?",
@@ -305,7 +306,7 @@ class Database:
                 return self.c.execute("SELECT user_id FROM user_data WHERE command = ? AND chat_id = ?",
                                       (command, chat_id)).fetchone()[0]
 
-    def married_set_users(self, chat_id: int, user_id: int, user2_id: int):
+    def married(self, chat_id: int, user_id: int, user2_id: int):
         with self.conn:
             self.c.execute("UPDATE user_data SET married = ? WHERE user_id = ? AND chat_id = ?",
                            (1, user_id, chat_id))
@@ -499,7 +500,7 @@ class Database:
                 list_ = list(self.c.execute("SELECT * FROM kittens_data WHERE user_id = ? AND chat_id = ?",
                                             (self.get_data(user_id, chat_id, 'user2_id'), chat_id)).fetchone())
             if target == 'kitten_data':
-                return f"Ваші кошенятка\n\n❤️Мама і тато: {self.get_data(list_[2], chat_id, 'name')} " \
+                return f"❤️Мама і тато: {self.get_data(list_[2], chat_id, 'name')} " \
                        f"і {self.get_data(list_[3], chat_id, 'name')}\n🐱Кількість: {list_[4]}\n" \
                        f"❇️Тип: {list_[7]}\n✨Рівень: {list_[6]}\n"
             else:
@@ -516,9 +517,21 @@ class Database:
     def buy_apartment(self, user_id: int, chat_id: int):
         with self.conn:
             money = self.c.execute("SELECT money FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone()[0]
+            type_ = self.c.execute("SELECT type FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone()[0]
+            photo = random.choice(apartment_photos) + '.jpg'
             self.c.execute("UPDATE user_data SET money = ? WHERE user_id = ? AND chat_id = ?", (money - 100, user_id, chat_id))
-            self.c.execute("INSERT INTO apartment_data (user_id, chat_id, photo, type) VALUES (?, ?, ?, ?)", (user_id, chat_id, '-', '-'))
+            self.c.execute("INSERT INTO apartment_data (user_id, chat_id, photo, type) VALUES (?, ?, ?, ?)",
+                           (user_id, chat_id, photo, type_))
             self.conn.commit()
+
+    def add_user_to_apartment(self, user_id: int, chat_id: int, user2_id: int):
+        list_ = list(self.c.execute("SELECT * FROM apartment_data WHERE user_id = ? AND chat_id = ?",
+                                    (user_id, chat_id)).fetchone())
+        for i in range(4):
+            if list_[i+6] == 0:
+                self.c.execute(f"UPDATE apartment_data SET user{i+2}_id = ? WHERE user_id = ? AND chat_id = ?",
+                               (user2_id, user_id, chat_id))
+                break
 
     def get_apartment_data(self, user_id: int, chat_id: int, target: str):
         with self.conn:
@@ -527,10 +540,11 @@ class Database:
             list_ = list(self.c.execute("SELECT * FROM apartment_data WHERE user_id = ? AND chat_id = ?",
                                         (user_id, chat_id)).fetchone())
             if target == 'apartment_data':
+                owner = self.get_data(user_id, chat_id, 'name')
                 cats = self.get_data(user_id, chat_id, 'name')
                 for i in range(4):
                     if self.get_apartment_data(user_id, chat_id, f'user{i+2}_id') != 0:
                         cats = f"{cats}, {self.get_data(self.get_apartment_data(user_id, chat_id, f'user{i+2}_id'), chat_id, 'name')}"
-                return f"Ваша квартирка:\n\nМешканці: {cats}\n❇️Тип: {list_[3]}\n✨Рівень: {list_[4]}\n"
+                return f"Власник: {owner}\nМешканці: {cats}\n❇️Тип: {list_[5]}\n✨Рівень: {list_[4]}\n"
             else:
                 return list_[a[target]]
