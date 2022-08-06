@@ -422,6 +422,8 @@ class Database:
 
     def get_data(self, user_id: int, chat_id: int, target: str):
         with self.conn:
+            rz = {0: 'разів', 1: 'раз', 2: 'раза', 3: 'рази', 4: 'рази', 5: 'раз',
+                  6: 'раз', 7: 'раз', 8: 'раз', 9: 'раз', 10: 'раз'}
             a = {'photo': 3, 'name': 4, 'level': 5, 'under_level': 6, 'type': 7, 'class': 8,
                  'hungry': 9, 'feed_limit': 10, 'wanna_play': 11, 'not_play_times': 12, 'happiness': 13,
                  'zero_times': 14, 'health': 15, 'job': 16, 'job_status': 17, 'job_hours': 18, 'money': 19,
@@ -430,33 +432,24 @@ class Database:
                  'kitten_type': 30, 'mother_id': 31, 'father_id': 32, 'vacation_place': 33, 'vacation_hours': 34}
             list_ = list(self.c.execute("SELECT * FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone())
             if target == 'cat_data':
-                if self.get_data(user_id, chat_id, 'level') == 'Кошенятко':
-                    return f"🐱Ім'я: {list_[4]}\n🧶Статус: {list_[5]}\n✨Рівень: {list_[6]}/50\n" \
-                           f"❇️Тип: {list_[7]}\n🧿Клас: {list_[8]}\n🥩Ситість: {list_[9]}/100\n" \
-                           f"🌈Рівень щастя: {list_[13]}/100\n"
-                elif self.get_data(user_id, chat_id, 'level') == 'Кіт':
-                    return f"🐱Ім'я: {list_[4]}\n🧶Статус: {list_[5]}\n✨Рівень: {list_[6]}/50\n" \
-                           f"❇️Тип: {list_[7]}\n🧿Клас: {list_[8]}\n🥩Ситість: {list_[9]}/100\n" \
-                           f"🌈Рівень щастя: {list_[13]}/100\n"
-                else:
-                    return f"🐱Ім'я: {list_[4]}\n🧶Статус: {list_[5]}\n✨Рівень: {list_[6]}/50\n" \
-                           f"❇️Тип: {list_[7]}\n🧿Клас: {list_[8]}\n🥩Ситість: {list_[9]}/100\n" \
-                           f"🌈Рівень щастя: {list_[13]}/100\n"
+                return f"🐱Ім'я: {list_[4]}\n🧶Статус: {list_[5]}\n✨Рівень: {list_[6]}/50\n" \
+                       f"❇️Тип: {list_[7]}\n🧿Клас: {list_[8]}\n🥩Ситість: {list_[9]}/100\n" \
+                       f"🌈Рівень щастя: {list_[13]}/100\n"
             elif target == 'cat_info':
-                if int(self.get_data(user_id, chat_id, 'under_level')) < 5:
-                    return f"🐱Ім'я: {list_[4]}\n🧩Хоче гратися: {list_[11]}\n"
-                elif 5 <= int(self.get_data(user_id, chat_id, 'under_level')) < 15:
-                    return f"🐱Ім'я: {list_[4]}\n🧩Хоче гратися: {list_[11]}\n💰Ваш баланс: {list_[19]}\n"
-                elif int(self.get_data(user_id, chat_id, 'under_level')) >= 15:
+                info = f"🐱Ім'я: {list_[4]}\n🥩Можна погодувати: {list_[10]} {rz[list_[10]]}\n🧩Хоче гратися: {list_[11]}\n"
+                if int(self.get_data(user_id, chat_id, 'under_level')) >= 5:
+                    info = info + f"💰Ваш баланс: {list_[19]}\n"
+                if int(self.get_data(user_id, chat_id, 'under_level')) >= 15:
                     if list_[25] == 0:
                         family = "Нема"
                     elif list_[25] == 1:
                         family = self.get_data(list_[26], chat_id, 'name')
                     elif list_[25] == 2:
                         family = f"Розлучений з {self.get_data(list_[26], chat_id, 'name')}"
-                    return f"🐱Ім'я: {list_[4]}\n🧩Хоче гратися: {list_[11]}\n💰Ваш баланс: {list_[19]}\n❤️Сім'я: {family}"
+                    info = info + f"❤️Сім'я: {family}\n"
+                return info
             elif target == 'cat_job':
-                return f"🛠Професія: {list_[16]}\n🛠Робота: {list_[17]}\n🛠Відпрацьовані години: {list_[18]}\n"
+                return f"🛠Професія: {list_[16]}\n🛠Статус: {list_[17]}\n🛠Відпрацьовані години: {list_[18]}\n"
             elif target == 'kitten_data':
                 return f"Ваші кошенятка\n\n❤️Мама і тато: {self.get_data(list_[31], chat_id, 'name')} " \
                        f"і {self.get_data(list_[32], chat_id, 'name')}\n🐱Кількість: {list_[27]}\n" \
