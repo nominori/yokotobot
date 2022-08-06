@@ -29,7 +29,7 @@ class Database:
     def init_db(self, force: bool = False):
         with self.conn:
             if force:
-                self.c.execute('DROP TABLE IF EXISTS user_data')
+                self.c.execute('DROP TABLE IF NOT EXISTS user_data')
             self.c.execute('''
                 CREATE TABLE IF NOT EXISTS user_data (
                     id          INTEGER PRIMARY KEY,
@@ -65,6 +65,7 @@ class Database:
                     kitten_type    TEXT    NOT NULL DEFAULT '',
                     mother_id   INTEGER NOT NULL DEFAULT 0,
                     father_id   INTEGER NOT NULL DEFAULT 0,
+                    vacation    INTEGER NOT NULL DEFAULT 0,
                     vacation_place    TEXT    NOT NULL DEFAULT '',
                     vacation_hours   INTEGER NOT NULL DEFAULT 0
                 )
@@ -246,17 +247,26 @@ class Database:
                            (job_changes, user_id, chat_id))
             self.conn.commit()
 
+    def vacation_days(self, user_id: int, chat_id: int, days: int):
+        with self.conn:
+            self.c.execute("UPDATE user_data SET vacation_hours = ? WHERE user_id = ? AND chat_id = ?",
+                           (days*24, user_id, chat_id))
+
     def vacation(self, user_id: int, chat_id: int, place: str):
         with self.conn:
+            vacation = self.c.execute("SELECT vacation FROM user_data WHERE user_id = ? AND chat_id = ?",
+                                      (user_id, chat_id)).fetchone()[0]
+            self.c.execute("UPDATE user_data SET vacation = ? WHERE user_id = ? AND chat_id = ?",
+                           (vacation + 1, user_id, chat_id))
             self.c.execute("UPDATE user_data SET job_status = ? WHERE user_id = ? AND chat_id = ?",
                            ("У відпустці", user_id, chat_id))
             self.c.execute("UPDATE user_data SET vacation_place = ? WHERE user_id = ? AND chat_id = ?",
                            (place, user_id, chat_id))
 
-    def vacation_days(self, user_id: int, chat_id: int, days: int):
+    def pension(self, user_id: int, chat_id: int):
         with self.conn:
-            self.c.execute("UPDATE user_data SET vacation_hours = ? WHERE user_id = ? AND chat_id = ?",
-                           (days*24, user_id, chat_id))
+            self.c.execute("UPDATE user_data SET job_status = ? WHERE user_id = ? AND chat_id = ?",
+                           ('На пенсії', user_id, chat_id))
 
     def married_get_user2(self, chat_id: int, name):
         with self.conn:
@@ -383,16 +393,21 @@ class Database:
             max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
             for i in range(1, max_id + 1):
                 if self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров':
+                    money = self.c.execute("SELECT money FROM user_data WHERE id = ?", (i,)).fetchone()[0]
                     if self.c.execute("SELECT job_status FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'На роботі':
                         job = self.c.execute("SELECT job FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                        money = self.c.execute("SELECT money FROM user_data WHERE id = ?", (i,)).fetchone()[0]
                         job_hours = self.c.execute("SELECT job_hours FROM user_data WHERE id = ?", (i,)).fetchone()[0]
                         self.c.execute("UPDATE user_data SET money = ? WHERE id = ?", (money + job_money[job], i))
                         self.c.execute("UPDATE user_data SET job_hours = ? WHERE id = ?", (job_hours + 1, i))
                     elif self.c.execute("SELECT job_status FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'У відпустці':
                         vacation_hours = self.c.execute("SELECT vacation_hours FROM user_data WHERE id = ?", (i,)).fetchone()[0]
+                        self.c.execute("UPDATE user_data SET money = ? WHERE id = ?", (money + 8, i))
                         self.c.execute("UPDATE user_data SET vacation_hours = ? WHERE id = ?", (vacation_hours - 1, i))
-
+                        if vacation_hours - 1 == 0:
+                            self.c.execute("UPDATE user_data SET job_status = ? WHERE id = ?", ('Не працює', i))
+                            self.c.execute("UPDATE user_data SET vacation_place = ? WHERE id = ?", ('', i))
+                    elif self.c.execute("SELECT job_status FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'На пенсії':
+                        self.c.execute("UPDATE user_data SET money = ? WHERE id = ?", (money + 15, i))
             self.conn.commit()
 
     def all_stop_working(self):
@@ -424,12 +439,18 @@ class Database:
         with self.conn:
             rz = {0: 'разів', 1: 'раз', 2: 'раза', 3: 'рази', 4: 'рази', 5: 'раз',
                   6: 'раз', 7: 'раз', 8: 'раз', 9: 'раз', 10: 'раз'}
+            day = {0: 'днів', 1: 'день', 2: 'дні', 3: 'дні', 4: 'дні', 5: 'днів', 6: 'днів', 7: 'днів', 8: 'днів',
+                   9: 'днів', 10: 'днів', 11: 'днів', 12: 'днів', 13: 'днів', 14: 'днів'}
+            hour = {1: 'годину', 2: 'години', 3: 'години', 4: 'години', 6: 'годин', 7: 'годин', 8: 'годин',
+                    9: 'годин', 10: 'годин', 11: 'годин', 12: 'годин', 13: 'годин', 14: 'годин', 15: 'годин',
+                    16: 'годин', 17: 'годин', 18: 'годин', 19: 'годин', 20: 'годин', 21: 'годину', 22: 'години',
+                    23: 'години'}
             a = {'photo': 3, 'name': 4, 'level': 5, 'under_level': 6, 'type': 7, 'class': 8,
                  'hungry': 9, 'feed_limit': 10, 'wanna_play': 11, 'not_play_times': 12, 'happiness': 13,
                  'zero_times': 14, 'health': 15, 'job': 16, 'job_status': 17, 'job_hours': 18, 'money': 19,
                  'command': 20, 'name_sets': 21, 'kill_ever': 22, 'alive': 23, 'job_changes': 24, 'married': 25,
-                 'user2_id': 26, 'kittens': 27, 'kitten_photo': 28, 'kitten_level': 29,
-                 'kitten_type': 30, 'mother_id': 31, 'father_id': 32, 'vacation_place': 33, 'vacation_hours': 34}
+                 'user2_id': 26, 'kittens': 27, 'kitten_photo': 28, 'kitten_level': 29, 'kitten_type': 30,
+                 'mother_id': 31, 'father_id': 32, 'vacation': 33, 'vacation_place': 34, 'vacation_hours': 35}
             list_ = list(self.c.execute("SELECT * FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone())
             if target == 'cat_data':
                 return f"🐱Ім'я: {list_[4]}\n🧶Статус: {list_[5]}\n✨Рівень: {list_[6]}/50\n" \
@@ -449,7 +470,13 @@ class Database:
                     info = info + f"❤️Сім'я: {family}\n"
                 return info
             elif target == 'cat_job':
-                return f"🛠Професія: {list_[16]}\n🛠Статус: {list_[17]}\n🛠Відпрацьовані години: {list_[18]}\n"
+                vacation_info = ''
+                if list_[17] == 'У відпустці':
+                    days = int(list_[35]/24)
+                    hours = int(list_[35] % 24)
+                    vacation_info = f"{list_[4]} полетів у {list_[34]}, його відпустка закінчиться через " \
+                                    f"{days} {day[days]} і {hours} {hour[hours]}\n"
+                return f"🛠Професія: {list_[16]}\n🛠Відпрацьовані години: {list_[18]}\n🛠Статус: {list_[17]}\n" + vacation_info
             elif target == 'kitten_data':
                 return f"Ваші кошенятка\n\n❤️Мама і тато: {self.get_data(list_[31], chat_id, 'name')} " \
                        f"і {self.get_data(list_[32], chat_id, 'name')}\n🐱Кількість: {list_[27]}\n" \

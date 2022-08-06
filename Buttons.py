@@ -3,14 +3,14 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 job_list = ['Бізнесмен', 'Банкір', 'Офіціант', 'Будівельник', 'Військовий', 'Шпигун', 'Психолог', 'Програміст',
             'Вчений', 'Сомільє', 'Менеджер', 'Інвестор', 'Кухар', 'Льотчик', 'Журналіст', 'Космонавт']
 text = ['Новий котик', 'Мій котик', 'Мої кошенятка', 'Інфо', 'Робота', 'Нагодувати', 'Погратись',
-        'Обрати професію', 'Відправити працювати', 'Відправити у відпустку', 'Змінити роботу']
+        'Обрати професію', 'Відправити працювати', 'Відправити у відпустку', 'Змінити професію', 'Пенсія']
 switch_inline_query = ['Хочу котика', 'Мій котик', 'Мої кошенятка', 'Котик інфо', 'Робота котика',  'Нагодувати',
-                       'Погратись', 'Обрати професію', 'Відправити працювати', 'Відправити у відпустку', 'Змінити роботу']
+                       'Погратись', 'Обрати професію', 'Відправити працювати', 'Поїхати у відпустку', 'Змінити професію', 'Піти на пенсію']
 cat_buttons, job_buttons = [], []
 
 for i in range(16):
     job_buttons.append(InlineKeyboardButton(text=job_list[i], callback_data='job_'+job_list[i]))
-for i in range(11):
+for i in range(12):
     cat_buttons.append(InlineKeyboardButton(text=text[i], switch_inline_query_current_chat=switch_inline_query[i]))
 
 AddGroupButton = InlineKeyboardButton(text='Додати в групу', url='http://t.me/yokotobot?startgroup=test')
