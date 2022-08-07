@@ -524,6 +524,18 @@ class Database:
                            (user_id, chat_id, photo, type_))
             self.conn.commit()
 
+    def user_in_apartment_exist(self, user_id: int, chat_id: int):
+        with self.conn:
+            for i in range(4):
+                if self.c.execute(f"SELECT user_id FROM apartment_data WHERE user{i+2}_id = ? AND chat_id = ?",
+                                  (user_id, chat_id)).fetchone() is not None:
+                    apartment_user = self.c.execute(f"SELECT user_id FROM apartment_data WHERE user{i+2}_id = ? AND chat_id = ?",
+                                                    (user_id, chat_id)).fetchone()[0]
+                    if apartment_user != 0:
+                        return apartment_user
+            else:
+                return 0
+
     def add_user_to_apartment(self, user_id: int, chat_id: int, user2_id: int):
         list_ = list(self.c.execute("SELECT * FROM apartment_data WHERE user_id = ? AND chat_id = ?",
                                     (user_id, chat_id)).fetchone())
