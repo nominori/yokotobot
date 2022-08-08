@@ -16,7 +16,6 @@ for i in range(14):
     cat_buttons.append(InlineKeyboardButton(text=text[i], switch_inline_query_current_chat=switch_inline_query[i]))
 
 AddGroupButton = InlineKeyboardButton(text='Додати в групу', url='http://t.me/yokotobot?startgroup=test')
-
 AddGroup = InlineKeyboardMarkup().add(AddGroupButton)
 NewCat = InlineKeyboardMarkup().add(cat_buttons[0])
 MyCat = InlineKeyboardMarkup().add(cat_buttons[1])
