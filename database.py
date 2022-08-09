@@ -20,6 +20,7 @@ kitten_types = {'Звичайний💙'+'Звичайний💙': ['Звича�
                 'Ультрарідкісний💜'+'Легендарний❤️': ['Ультрарідкісний💜', 'Легендарний❤️'],
                 'Легендарний❤️'+'Легендарний❤️': ['Легендарний❤️']}
 apartment_photos = ['a1', 'a2', 'a3', 'a4']
+types_ = ['Звичайний💙', 'Рідкісний🧡', 'Ультрарідкісний💜', 'Легендарний❤️']
 
 
 class Database:
@@ -85,13 +86,13 @@ class Database:
                 user_id     INTEGER NOT NULL,
                 chat_id     INTEGER NOT NULL,
                 photo       TEXT NOT NULL,
-                level       INTEGER    NOT NULL DEFAULT 1,
-                type        TEXT NOT NULL,
                 user1_id    INTEGER NOT NULL DEFAULT 0,
                 user2_id    INTEGER NOT NULL DEFAULT 0,
                 user3_id    INTEGER NOT NULL DEFAULT 0,
                 user4_id    INTEGER NOT NULL DEFAULT 0,
-                user5_id    INTEGER NOT NULL DEFAULT 0
+                user5_id    INTEGER NOT NULL DEFAULT 0,
+                level       INTEGER    NOT NULL DEFAULT 1,
+                type        TEXT NOT NULL
             )
         ''')
         self.conn.commit()
@@ -489,21 +490,20 @@ class Database:
 
     def buy_apartment(self, user_id: int, chat_id: int):
         money = self.c.execute("SELECT money FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone()[0]
-        type_ = self.c.execute("SELECT type FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone()[0]
+        type_ = random.choice(types_)
         photo = random.choice(apartment_photos) + '.jpg'
         self.c.execute("UPDATE user_data SET money = ? WHERE user_id = ? AND chat_id = ?", (money - 100, user_id, chat_id))
-        self.c.execute("INSERT INTO apartment_data (user_id, chat_id, photo, type, user1_id) VALUES (?, ?, ?, ?, ?)",
-                       (user_id, chat_id, photo, type_, user_id))
+        self.c.execute("INSERT INTO apartment_data (user_id, chat_id, photo, type) VALUES (?, ?, ?, ?)",
+                       (user_id, chat_id, photo, type_))
         self.conn.commit()
 
     def user_in_all_apartments_exist(self, user_id: int, chat_id: int):
         for i in range(5):
             if self.c.execute(f"SELECT user_id FROM apartment_data WHERE user{i+1}_id = ? AND chat_id = ?",
                               (user_id, chat_id)).fetchone() is not None:
-                apartment_user = self.c.execute(f"SELECT user_id FROM apartment_data WHERE user{i+1}_id = ? AND chat_id = ?",
-                                                (user_id, chat_id)).fetchone()[0]
-                if apartment_user != 0:
-                    return apartment_user
+                apartment_owner = self.c.execute(f"SELECT user_id FROM apartment_data WHERE user{i+1}_id = ? AND chat_id = ?",
+                                                 (user_id, chat_id)).fetchone()[0]
+                return apartment_owner
         else:
             return 0
 
@@ -536,9 +536,17 @@ class Database:
                 self.conn.commit()
                 break
 
+    def change_apartment(self, user_id: int, chat_id: int, user2_id: int):
+        if self.user_in_all_apartments_exist(user2_id, chat_id) == 0:
+            self.add_user_to_apartment(user_id, chat_id, user2_id)
+        else:
+            owner = self.user_in_all_apartments_exist(user2_id, chat_id)
+            self.remove_from_apartment(owner, chat_id, user2_id)
+            self.add_user_to_apartment(user_id, chat_id, user2_id)
+
     def get_apartment_data(self, user_id: int, chat_id: int, target: str):
-        a = {'user_id': 2, 'photo': 3, 'level': 4, 'type': 5,
-             'user1_id': 6, 'user2_id': 7, 'user3_id': 8, 'user4_id': 9, 'user5_id': 10}
+        a = {'user_id': 1, 'photo': 3, 'user1_id': 4, 'user2_id': 5, 'user3_id': 6, 'user4_id': 7, 'user5_id': 8,
+             'level': 9, 'type': 10}
         list_ = list(self.c.execute("SELECT * FROM apartment_data WHERE user_id = ? AND chat_id = ?",
                                     (user_id, chat_id)).fetchone())
         if target == 'apartment_data':
@@ -551,6 +559,6 @@ class Database:
                 cats = "Нема"
             else:
                 cats = cats[:len(cats)-2]
-            return f"🧿Власник: {owner}\n🐱Мешканці: {cats}\n❇️Тип: {list_[5]}\n✨Рівень: {list_[4]}\n"
+            return f"🧿Власник: {owner}\n🐱Мешканці: {cats}\n❇️Тип: {list_[10]}\n✨Рівень: {list_[9]}\n"
         else:
             return list_[a[target]]
