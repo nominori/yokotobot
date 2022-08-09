@@ -56,6 +56,7 @@ class Database:
                 job_hours   INTEGER NOT NULL DEFAULT 0,
                 money       INTEGER NOT NULL DEFAULT 0,
                 command     TEXT    NOT NULL DEFAULT '',
+                command_user2_id    INTEGER NOT NULL DEFAULT 0,
                 name_sets   INTEGER NOT NULL DEFAULT 4,
                 kill_ever   INTEGER NOT NULL DEFAULT 0,
                 alive       INTEGER NOT NULL DEFAULT 0,
@@ -144,9 +145,12 @@ class Database:
                        (feed_limit, user_id, chat_id))
         self.conn.commit()
 
-    def change_command(self, user_id: int, chat_id: int, command: str):
+    def change_command(self, user_id: int, chat_id: int, command: str, *user2_id: int):
         self.c.execute("UPDATE user_data SET command = ? WHERE user_id = ? AND chat_id = ?",
                        (command, user_id, chat_id))
+        for id_ in user2_id:
+            self.c.execute("UPDATE user_data SET command_user2_id = ? WHERE user_id = ? AND chat_id = ?",
+                           (id_, user_id, chat_id))
         self.conn.commit()
 
     def kill(self, user_id: int, chat_id: int, command: str):
@@ -281,14 +285,6 @@ class Database:
         return self.c.execute("SELECT user_id FROM user_data WHERE name = ? AND chat_id = ?",
                               (name, chat_id)).fetchone()[0]
 
-    def get_data_where_command(self, chat_id: int, command: str, target: str):
-        if target == 'name':
-            return self.c.execute("SELECT name FROM user_data WHERE command = ? AND chat_id = ?",
-                                  (command, chat_id)).fetchone()[0]
-        elif target == 'user_id':
-            return self.c.execute("SELECT user_id FROM user_data WHERE command = ? AND chat_id = ?",
-                                  (command, chat_id)).fetchone()[0]
-
     def married(self, chat_id: int, user_id: int, user2_id: int):
         self.c.execute("UPDATE user_data SET married = ? WHERE user_id = ? AND chat_id = ?",
                        (1, user_id, chat_id))
@@ -419,8 +415,8 @@ class Database:
         a = {'photo': 3, 'name': 4, 'level': 5, 'under_level': 6, 'type': 7, 'class': 8,
              'hungry': 9, 'feed_limit': 10, 'wanna_play': 11, 'not_play_times': 12, 'happiness': 13,
              'zero_times': 14, 'health': 15, 'job': 16, 'job_status': 17, 'job_hours': 18, 'money': 19,
-             'command': 20, 'name_sets': 21, 'kill_ever': 22, 'alive': 23, 'job_changes': 24, 'married': 25,
-             'user2_id': 26, 'kittens': 27, 'vacation': 28, 'vacation_place': 29, 'vacation_hours': 30}
+             'command': 20, 'command_user2_id': 21, 'name_sets': 22, 'kill_ever': 23, 'alive': 24, 'job_changes': 25, 'married': 26,
+             'user2_id': 27, 'kittens': 28, 'vacation': 29, 'vacation_place': 30, 'vacation_hours': 31}
         list_ = list(self.c.execute("SELECT * FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone())
         if target == 'cat_data':
             return f"🐱Ім'я: {list_[4]}\n🧶Статус: {list_[5]}\n✨Рівень: {list_[6]}/50\n" \
@@ -432,20 +428,20 @@ class Database:
             info = f"🐱Ім'я: {list_[4]}\n🥩Можна погодувати: {list_[10]} {rz[list_[10]]}\n🧩Хоче гратися: {list_[11]}\n"
             if int(self.get_data(user_id, chat_id, 'under_level')) >= 15:
                 family = ''
-                if list_[25] == 0:
+                if list_[26] == 0:
                     family = "Нема"
-                elif list_[25] == 1:
-                    family = self.get_data(list_[26], chat_id, 'name')
-                elif list_[25] == 2:
-                    family = f"Розлучений з {self.get_data(list_[26], chat_id, 'name')}"
+                elif list_[27] == 1:
+                    family = self.get_data(list_[27], chat_id, 'name')
+                elif list_[28] == 2:
+                    family = f"Розлучений з {self.get_data(list_[27], chat_id, 'name')}"
                 info = info + f"❤️Сім'я: {family}\n"
             return info
         elif target == 'cat_job':
             vacation_info = ''
             if list_[17] == 'У відпустці':
-                days = int(list_[30]/24)
-                hours = int(list_[30] % 24)
-                vacation_info = f"✨{list_[4]} полетів у {list_[29]}, його відпустка закінчиться через " \
+                days = int(list_[31]/24)
+                hours = int(list_[31] % 24)
+                vacation_info = f"✨{list_[4]} полетів у {list_[30]}, його відпустка закінчиться через " \
                                 f"{days} {day[days]} і {hours} {hour[hours]}✨\n"
             return f"🛠Професія: {list_[16]}\n🛠Відпрацьовані години: {list_[18]}\n🛠Статус: {list_[17]}\n" + vacation_info
         elif target == 'cat_money':
