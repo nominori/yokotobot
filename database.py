@@ -145,12 +145,14 @@ class Database:
                        (feed_limit, user_id, chat_id))
         self.conn.commit()
 
-    def change_command(self, user_id: int, chat_id: int, command: str, *user2_id: int):
+    def change_command(self, user_id: int, chat_id: int, command: str):
         self.c.execute("UPDATE user_data SET command = ? WHERE user_id = ? AND chat_id = ?",
                        (command, user_id, chat_id))
-        for id_ in user2_id:
-            self.c.execute("UPDATE user_data SET command_user2_id = ? WHERE user_id = ? AND chat_id = ?",
-                           (id_, user_id, chat_id))
+        self.conn.commit()
+
+    def change_command_user2_id(self, user_id: int, chat_id: int, user2_id: int):
+        self.c.execute("UPDATE user_data SET command_user2_id = ? WHERE user_id = ? AND chat_id = ?",
+                       (user2_id, user_id, chat_id))
         self.conn.commit()
 
     def kill(self, user_id: int, chat_id: int, command: str):
