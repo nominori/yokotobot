@@ -107,7 +107,7 @@ async def add(message: types.Message):
                           'Змінити професію', f'{Bot_ID} Змінити професію', "Розлучитись", "Завести кошеняток",
                           "Мої кошенятка", f"{Bot_ID} Мої кошенятка", 'Вбити котика', 'Воскресити мого котика',
                           "Купити квартиру", f"{Bot_ID} Купити квартиру", "Моя квартира", f"{Bot_ID} Моя квартира",
-                          "Магазин", "Мій баланс", "Переїхати до себе"])
+                          "Магазин", "Мій баланс", "Переїхати до себе", "Виїхати з квартири"])
 async def commands(message: types.Message):
     user_id, chat_id = message.from_user.id, message.chat.id
     message.text = message.text.replace(f'{Bot_ID} ', '')
@@ -345,11 +345,18 @@ async def commands(message: types.Message):
                         else:
                             data.change_apartment(user_id, chat_id, user_id)
                             await bot.send_message(chat_id, "Ви переїхали до себе")
+                elif message.text == "Виїхати з квартири":
+                    owner = data.user_in_all_apartments_exist(user_id, chat_id)
+                    if owner == 0:
+                        await bot.send_message(chat_id, "У вас немає квартири")
+                    else:
+                        data.remove_from_apartment(owner, chat_id, user_id)
+                        await bot.send_message(chat_id, f"{user_name} більше не живе квартирі!")
         else:
             await bot.send_message(chat_id, "Ти маєш спочатку отримати кота!", reply_markup=NewCat)
 
 
-@dp.message_handler(text_contains="Змінити ім'я на ")
+@dp.message_handler(text_startswith="Змінити ім'я на ")
 async def change_name(message: types.Message):
     user_id, chat_id = message.from_user.id, message.chat.id
     message.text = message.text.replace(f"Змінити ім'я на ", "")
@@ -376,7 +383,7 @@ async def change_name(message: types.Message):
                 await bot.send_message(chat_id, "Ви більше не можете змінювати ім'я свого котика")
 
 
-@dp.message_handler(text_contains="Завести сім'ю з ")
+@dp.message_handler(text_startswith="Завести сім'ю з ")
 async def family(message: types.Message):
     user_id, chat_id = message.from_user.id, message.chat.id
     message.text = message.text.replace(f"Завести сім'ю з ", "")
@@ -415,7 +422,7 @@ async def family(message: types.Message):
                                        "У цьому чаті такого котика не існує, спробуйте ще раз написати ім'я")
 
 
-@dp.message_handler(text_contains="Запросити ")
+@dp.message_handler(text_startswith="Запросити ")
 async def invitation(message: types.Message):
     user_id, chat_id = message.from_user.id, message.chat.id
     message.text = message.text.replace(f"Запросити ", "")
@@ -460,7 +467,7 @@ async def invitation(message: types.Message):
                                        "У цьому чаті такого котика не існує, спробуйте ще раз написати ім'я")
 
 
-@dp.message_handler(text_contains="Виселити ")
+@dp.message_handler(text_startswith="Виселити ")
 async def remove(message: types.Message):
     user_id, chat_id = message.from_user.id, message.chat.id
     message.text = message.text.replace(f"Виселити ", "")
@@ -493,7 +500,7 @@ async def remove(message: types.Message):
                                        "У цьому чаті такого котика не існує, спробуйте ще раз написати ім'я")
 
 
-@dp.message_handler(text_contains="Переїхати до ")
+@dp.message_handler(text_startswith="Переїхати до ")
 async def change_apartment_(message: types.Message):
     user_id, chat_id = message.from_user.id, message.chat.id
     message.text = message.text.replace(f"Переїхати до ", "")
