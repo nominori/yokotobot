@@ -20,7 +20,7 @@ kitten_types = {'Звичайний💙'+'Звичайний💙': ['Звича�
                 'Ультрарідкісний💜'+'Легендарний❤️': ['Ультрарідкісний💜', 'Легендарний❤️'],
                 'Легендарний❤️'+'Легендарний❤️': ['Легендарний❤️']}
 apartment_photos = ['a1', 'a2', 'a3', 'a4']
-types_ = ['Звичайний💙', 'Рідкісний🧡', 'Ультрарідкісний💜', 'Легендарний❤️']
+apartment_types = ['Мегаполіс', 'Столиця', 'Маленьке містечко', 'Берег моря']
 
 
 class Database:
@@ -166,7 +166,7 @@ class Database:
                            (1, user_id, chat_id))
         self.conn.commit()
 
-    def alive(self, user_id: int, chat_id: int):
+    def reborn(self, user_id: int, chat_id: int):
         self.c.execute("UPDATE user_data SET health = ? WHERE user_id = ? AND chat_id = ?",
                        ('Здоров', user_id, chat_id))
         self.c.execute("UPDATE user_data SET alive = ? WHERE user_id = ? AND chat_id = ?", (1, user_id, chat_id))
@@ -422,7 +422,7 @@ class Database:
         list_ = list(self.c.execute("SELECT * FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone())
         if target == 'cat_data':
             return f"🐱Ім'я: {list_[4]}\n🧶Статус: {list_[5]}\n✨Рівень: {list_[6]}/50\n" \
-                   f"❇️Тип: {list_[7]}\n🧿Клас: {list_[8]}\n🥩Ситість: {list_[9]}/100\n" \
+                   f"❇️Тип: {list_[7]}\n🧿Клас: {list_[8]}\n❤️Здоров'я: {list_[15]}\n🥩Ситість: {list_[9]}/100\n" \
                    f"🌈Рівень щастя: {list_[13]}/100\n"
         elif target == 'cat_info':
             if list_[10] == 0:
@@ -488,7 +488,7 @@ class Database:
 
     def buy_apartment(self, user_id: int, chat_id: int):
         money = self.c.execute("SELECT money FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone()[0]
-        type_ = random.choice(types_)
+        type_ = random.choice(apartment_types)
         photo = random.choice(apartment_photos) + '.jpg'
         self.c.execute("UPDATE user_data SET money = ? WHERE user_id = ? AND chat_id = ?", (money - 100, user_id, chat_id))
         self.c.execute("INSERT INTO apartment_data (user_id, chat_id, photo, type) VALUES (?, ?, ?, ?)",
@@ -557,6 +557,6 @@ class Database:
                 cats = "Нема"
             else:
                 cats = cats[:len(cats)-2]
-            return f"🧿Власник: {owner}\n🐱Мешканці: {cats}\n❇️Тип: {list_[10]}\n✨Рівень: {list_[9]}\n"
+            return f"🧿Власник: {owner}\n❇️Розташування: {list_[10]}\n✨Рівень: {list_[9]}\n🐱Мешканці: {cats}\n"
         else:
             return list_[a[target]]
