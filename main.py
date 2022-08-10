@@ -1,3 +1,5 @@
+import time
+
 from aiogram import Bot, Dispatcher, executor, types
 import asyncio
 import logging
@@ -717,12 +719,13 @@ async def job_choice(call: types.CallbackQuery):
 
 async def allways():
     while True:
-        await data.all_feed()
-        await data.all_wanna_play()
-        await data.all_hungry()
-        await data.all_job()
-        await data.all_stop_working()
-        await data.not_doing()
+        if time.strftime("%S") == "00":
+            await data.all_feed()
+            await data.all_wanna_play()
+            await data.all_hungry()
+            await data.all_job()
+            await data.all_stop_working()
+            await data.not_doing()
         await asyncio.sleep(1)
 
 if __name__ == '__main__':
