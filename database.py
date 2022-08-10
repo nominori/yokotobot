@@ -57,7 +57,7 @@ class Database:
         self.conn = sqlite3.connect('database.db')
         self.c = self.conn.cursor()
 
-    def init_db(self, force: bool = False):
+    async def init_db(self, force: bool = False):
         if force:
             self.c.execute('DROP TABLE IF EXISTS user_data')
             self.c.execute('DROP TABLE IF EXISTS job_data')
@@ -152,7 +152,7 @@ class Database:
         else:
             return 0
 
-    def add_user(self, user_id: int, chat_id: int):
+    async def add_user(self, user_id: int, chat_id: int):
         pict = str(random.choice(photos)) + '.jpg'
         play = random.choice(['Так', 'Ні'])
         self.c.execute("INSERT INTO user_data (user_id, chat_id, photo, type, class, wanna_play) "
@@ -174,7 +174,7 @@ class Database:
         else:
             return 0
 
-    def set_name(self, user_id: int, chat_id: int, name):
+    async def set_name(self, user_id: int, chat_id: int, name):
         self.c.execute("UPDATE user_data SET name = ? WHERE user_id = ? AND chat_id = ?", (name, user_id, chat_id))
         name_sets = self.c.execute("SELECT name_sets FROM user_data WHERE user_id = ? AND chat_id = ?",
                                    (user_id, chat_id)).fetchone()[0]
@@ -184,7 +184,7 @@ class Database:
                        (name_sets, user_id, chat_id))
         self.conn.commit()
 
-    def change_feed(self, user_id: int, chat_id: int, target: str):
+    async def change_feed(self, user_id: int, chat_id: int, target: str):
         feed_limit = self.c.execute("SELECT feed_limit FROM user_data WHERE user_id = ? AND chat_id = ?",
                                     (user_id, chat_id)).fetchone()[0]
         if target == '-' and feed_limit > 0:
@@ -198,17 +198,17 @@ class Database:
                        (feed_limit, user_id, chat_id))
         self.conn.commit()
 
-    def change_command(self, user_id: int, chat_id: int, command: str):
+    async def change_command(self, user_id: int, chat_id: int, command: str):
         self.c.execute("UPDATE user_data SET command = ? WHERE user_id = ? AND chat_id = ?",
                        (command, user_id, chat_id))
         self.conn.commit()
 
-    def change_command_user2_id(self, user_id: int, chat_id: int, user2_id: int):
+    async def change_command_user2_id(self, user_id: int, chat_id: int, user2_id: int):
         self.c.execute("UPDATE user_data SET command_user2_id = ? WHERE user_id = ? AND chat_id = ?",
                        (user2_id, user_id, chat_id))
         self.conn.commit()
 
-    def kill(self, user_id: int, chat_id: int, command: str):
+    async def kill(self, user_id: int, chat_id: int, command: str):
         if command == 'kill':
             self.c.execute("UPDATE user_data SET kill_ever = ? WHERE user_id = ? AND chat_id = ?",
                            (2, user_id, chat_id))
@@ -219,7 +219,7 @@ class Database:
                            (1, user_id, chat_id))
         self.conn.commit()
 
-    def reborn(self, user_id: int, chat_id: int):
+    async def reborn(self, user_id: int, chat_id: int):
         self.c.execute("UPDATE user_data SET health = ? WHERE user_id = ? AND chat_id = ?",
                        ('Здоров', user_id, chat_id))
         self.c.execute("UPDATE user_data SET alive = ? WHERE user_id = ? AND chat_id = ?", (1, user_id, chat_id))
@@ -234,7 +234,7 @@ class Database:
                        (0, user_id, chat_id))
         self.conn.commit()
 
-    def level_up(self, user_id: int, chat_id: int):
+    async def level_up(self, user_id: int, chat_id: int):
         under_level = self.c.execute("SELECT under_level FROM user_data WHERE user_id = ? AND chat_id = ?",
                                      (user_id, chat_id)).fetchone()[0]
         if under_level + 1 == 5:
@@ -246,16 +246,16 @@ class Database:
         elif under_level + 1 == 35:
             self.c.execute("UPDATE user_data SET level = ? WHERE user_id = ? AND chat_id = ?",
                            ('Мудрий кіт', user_id, chat_id))
-            self.change_job_changes(user_id, chat_id, '+')
+            await self.change_job_changes(user_id, chat_id, '+')
         elif under_level + 1 in [15, 25, 45]:
-            self.change_job_changes(user_id, chat_id, '+')
+            await self.change_job_changes(user_id, chat_id, '+')
         if under_level < 50:
             self.c.execute("UPDATE user_data SET under_level = ? WHERE user_id = ? AND chat_id = ?",
                            (under_level + 1, user_id, chat_id))
-            self.change_feed(user_id, chat_id, '+')
+            await self.change_feed(user_id, chat_id, '+')
         self.conn.commit()
 
-    def change_happiness(self, user_id: int, chat_id: int, plus: int):
+    async def change_happiness(self, user_id: int, chat_id: int, plus: int):
         happiness = self.c.execute("SELECT happiness FROM user_data WHERE user_id = ? AND chat_id = ?",
                                    (user_id, chat_id)).fetchone()[0]
         if happiness + plus >= 100:
@@ -266,26 +266,26 @@ class Database:
                        (happiness, user_id, chat_id))
         self.conn.commit()
 
-    def change_hungry(self, user_id: int, chat_id: int):
+    async def change_hungry(self, user_id: int, chat_id: int):
         hungry_plus = {'Домашній кітик': 15, 'Сплячий кітик': 20, 'Грайливий кітик': 16, 'Бойовий кітик': 17,
                        'Кітик гурман': 20, 'Кітик вампір': 20, 'Кітик комуніст': 20, 'Наркіт': 20}
         happiness = {'Домашній кітик': 5, 'Сплячий кітик': 6, 'Грайливий кітик': 5, 'Бойовий кітик': 7,
                      'Кітик гурман': 10, 'Кітик вампір': 8, 'Кітик комуніст': 8, 'Наркіт': 8}
-        self.change_feed(user_id, chat_id, '-')
+        await self.change_feed(user_id, chat_id, '-')
         hungry = self.c.execute("SELECT hungry FROM user_data WHERE user_id = ? AND chat_id = ?",
                                 (user_id, chat_id)).fetchone()[0]
         clas = self.c.execute("SELECT class FROM user_data WHERE user_id = ? AND chat_id = ?",
                               (user_id, chat_id)).fetchone()[0]
         if hungry + hungry_plus[clas] >= 100:
             hungry = 30
-            self.level_up(user_id, chat_id)
+            await self.level_up(user_id, chat_id)
         else:
             hungry = hungry + hungry_plus[clas]
         self.c.execute("UPDATE user_data SET hungry = ? WHERE user_id = ? AND chat_id = ?", (hungry, user_id, chat_id))
         self.conn.commit()
-        self.change_happiness(user_id, chat_id, happiness[clas])
+        await self.change_happiness(user_id, chat_id, happiness[clas])
 
-    def change_wanna_play(self, user_id: int, chat_id: int):
+    async def change_wanna_play(self, user_id: int, chat_id: int):
         happiness = {'Домашній кітик': 20, 'Сплячий кітик': 25, 'Грайливий кітик': 20, 'Бойовий кітик': 15,
                      'Кітик гурман': 15, 'Кітик вампір': 15, 'Кітик комуніст': 15, 'Наркіт': 15}
         clas = self.c.execute("SELECT class FROM user_data WHERE user_id = ? AND chat_id = ?",
@@ -295,36 +295,38 @@ class Database:
         self.c.execute("UPDATE user_data SET not_play_times = ? WHERE user_id = ? AND chat_id = ?",
                        (0, user_id, chat_id))
         self.conn.commit()
-        self.change_happiness(user_id, chat_id, happiness[clas])
+        await self.change_happiness(user_id, chat_id, happiness[clas])
 
     def get_user2_id(self, chat_id: int, name):
         return self.c.execute("SELECT user_id FROM user_data WHERE name = ? AND chat_id = ?",
                               (name, chat_id)).fetchone()[0]
 
-    def married(self, chat_id: int, user_id: int, user2_id: int):
+    async def married(self, chat_id: int, user_id: int, user2_id: int):
         self.c.execute("UPDATE user_data SET married = ? WHERE user_id = ? AND chat_id = ?",
                        (1, user_id, chat_id))
         self.c.execute("UPDATE user_data SET user2_id = ? WHERE user_id = ? AND chat_id = ?",
                        (user2_id, user_id, chat_id))
 
-    def married_break(self, chat_id: int, user_id: int):
+    async def married_break(self, chat_id: int, user_id: int, user2_id: int):
         self.c.execute("UPDATE user_data SET married = ? WHERE user_id = ? AND chat_id = ?",
                        (2, user_id, chat_id))
+        self.c.execute("UPDATE user_data SET married = ? WHERE user_id = ? AND chat_id = ?",
+                       (2, user2_id, chat_id))
         self.conn.commit()
 
-    def change_job(self, user_id: int, chat_id: int, new_job: str):
+    async def change_job(self, user_id: int, chat_id: int, new_job: str):
         self.c.execute("UPDATE job_data SET job = ? WHERE user_id = ? AND chat_id = ?",
                        (new_job, user_id, chat_id))
         self.conn.commit()
 
-    def start_working(self, user_id: int, chat_id: int):
+    async def start_working(self, user_id: int, chat_id: int):
         self.c.execute("UPDATE job_data SET job_status = ? WHERE user_id = ? AND chat_id = ?",
                        ('На роботі', user_id, chat_id))
         self.c.execute("UPDATE time_data SET job_time = ? WHERE user_id = ? AND chat_id = ?",
                        (strftime("%H:%M"), user_id, chat_id))
         self.conn.commit()
 
-    def change_job_changes(self, user_id: int, chat_id: int, target: str):
+    async def change_job_changes(self, user_id: int, chat_id: int, target: str):
         job_changes = self.c.execute("SELECT job_changes FROM job_data WHERE user_id = ? AND chat_id = ?",
                                      (user_id, chat_id)).fetchone()[0]
         if target == '-' and job_changes > 0:
@@ -335,12 +337,12 @@ class Database:
                        (job_changes, user_id, chat_id))
         self.conn.commit()
 
-    def vacation_days(self, user_id: int, chat_id: int, days: int):
+    async def vacation_days(self, user_id: int, chat_id: int, days: int):
         self.c.execute("UPDATE job_data SET vacation_hours = ? WHERE user_id = ? AND chat_id = ?",
                        (days*24, user_id, chat_id))
         self.conn.commit()
 
-    def vacation(self, user_id: int, chat_id: int, place: str):
+    async def vacation(self, user_id: int, chat_id: int, place: str):
         vacation_ = self.c.execute("SELECT vacation FROM job_data WHERE user_id = ? AND chat_id = ?",
                                    (user_id, chat_id)).fetchone()[0]
         self.c.execute("UPDATE job_data SET vacation = ? WHERE user_id = ? AND chat_id = ?",
@@ -353,7 +355,7 @@ class Database:
                        (strftime("%H:%M"), user_id, chat_id))
         self.conn.commit()
 
-    def pension(self, user_id: int, chat_id: int):
+    async def pension(self, user_id: int, chat_id: int):
         self.c.execute("UPDATE job_data SET job_status = ? WHERE user_id = ? AND chat_id = ?",
                        ('На пенсії', user_id, chat_id))
         self.c.execute("UPDATE time_data SET job_time = ? WHERE user_id = ? AND chat_id = ?",
@@ -369,7 +371,7 @@ class Database:
         else:
             return 0
 
-    def kittens(self, chat_id: int, user_id: int, user2_id: int):
+    async def kittens(self, chat_id: int, user_id: int, user2_id: int):
         number = random.choice([3, 4, 5])
         photo = random.choice(kitten_photos) + '.jpg'
         type_ = random.choice(kitten_types[self.get_data(user_id, chat_id, 'user_data', 'type') + self.get_data(user2_id, chat_id, 'user_data', 'type')])
@@ -377,14 +379,14 @@ class Database:
                        "VALUES (?, ?, ?, ?, ?, ?)", (chat_id, user_id, user2_id, number, photo, type_))
         self.conn.commit()
 
-    def apartment_exist(self, user_id: int, chat_id: int):
+    async def apartment_exist(self, user_id: int, chat_id: int):
         if self.c.execute("SELECT chat_id FROM apartment_data WHERE user_id = ? AND chat_id = ?",
                           (user_id, chat_id)).fetchone() is not None:
             return 1
         else:
             return 0
 
-    def buy_apartment(self, user_id: int, chat_id: int):
+    async def buy_apartment(self, user_id: int, chat_id: int):
         money = self.c.execute("SELECT money FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone()[0]
         type_ = random.choice(apartment_types)
         photo = random.choice(apartment_photos) + '.jpg'
@@ -412,7 +414,7 @@ class Database:
         else:
             return 0
 
-    def add_user_to_apartment(self, user_id: int, chat_id: int, user2_id: int):
+    async def add_user_to_apartment(self, user_id: int, chat_id: int, user2_id: int):
         for i in range(5):
             user = self.c.execute(f"SELECT user{i + 1}_id FROM apartment_data WHERE user_id = ? AND chat_id = ?",
                                   (user_id, chat_id)).fetchone()[0]
@@ -422,7 +424,7 @@ class Database:
                 self.conn.commit()
                 break
 
-    def remove_from_apartment(self, user_id: int, chat_id: int, user2_id: int):
+    async def remove_from_apartment(self, user_id: int, chat_id: int, user2_id: int):
         for i in range(5):
             user = self.c.execute(f"SELECT user{i+1}_id FROM apartment_data WHERE user_id = ? AND chat_id = ?",
                                   (user_id, chat_id)).fetchone()[0]
@@ -432,13 +434,136 @@ class Database:
                 self.conn.commit()
                 break
 
-    def change_apartment(self, user_id: int, chat_id: int, user2_id: int):
+    async def change_apartment(self, user_id: int, chat_id: int, user2_id: int):
         if self.user_in_all_apartments_exist(user2_id, chat_id) == 0:
-            self.add_user_to_apartment(user_id, chat_id, user2_id)
+            await self.add_user_to_apartment(user_id, chat_id, user2_id)
         else:
             owner = self.user_in_all_apartments_exist(user2_id, chat_id)
-            self.remove_from_apartment(owner, chat_id, user2_id)
-            self.add_user_to_apartment(user_id, chat_id, user2_id)
+            await self.remove_from_apartment(owner, chat_id, user2_id)
+            await self.add_user_to_apartment(user_id, chat_id, user2_id)
+
+    async def all_feed(self):
+        max_ = {'Домашній кітик': 4, 'Сплячий кітик': 3, 'Грайливий кітик': 5, 'Бойовий кітик': 4,
+                'Кітик гурман': 5, 'Кітик вампір': 5, 'Кітик комуніст': 5, 'Наркіт': 5}
+        max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
+        for i in range(1, max_id + 1):
+            user_time = self.c.execute("SELECT feed_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
+            if strftime('%H:%M') in time_list(user_time, "feed") and \
+                    self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров':
+                feed_limit = self.c.execute("SELECT feed_limit FROM user_data WHERE id = ?", (i,)).fetchone()[0]
+                if feed_limit < max_[self.c.execute("SELECT class FROM user_data WHERE id = ?", (i,)).fetchone()[0]]:
+                    self.c.execute("UPDATE user_data SET feed_limit = ? WHERE id = ?", (feed_limit + 1, i))
+        self.conn.commit()
+
+    async def all_hungry(self):
+        hungry_minus = {'Домашній кітик': 5, 'Сплячий кітик': 5, 'Грайливий кітик': 6, 'Бойовий кітик': 5,
+                        'Кітик гурман': 5, 'Кітик вампір': 5, 'Кітик комуніст': 5, 'Наркіт': 5}
+        max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
+        for i in range(1, max_id + 1):
+            user_time = self.c.execute("SELECT create_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
+            if strftime('%H:%M') in time_list(user_time, "hungry") and \
+                    self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров':
+                hungry = self.c.execute("SELECT hungry FROM user_data WHERE id = ?", (i,)).fetchone()[0]
+                if hungry != 0:
+                    clas = self.c.execute("SELECT class FROM user_data WHERE id = ?", (i,)).fetchone()[0]
+                    if hungry - hungry_minus[clas] > 0:
+                        hungry = hungry - hungry_minus[clas]
+                    else:
+                        hungry = 0
+                    self.c.execute("UPDATE user_data SET hungry = ? WHERE id = ?", (hungry, i))
+                else:
+                    happiness = self.c.execute("SELECT happiness FROM user_data WHERE id = ?", (i,)).fetchone()[0]
+                    if happiness - 5 > 0:
+                        happiness = happiness - 5
+                    else:
+                        happiness = 0
+                    self.c.execute("UPDATE user_data SET happiness = ? WHERE id = ?", (happiness, i))
+        self.conn.commit()
+
+    async def all_wanna_play(self):
+        play_chance = {'Домашній кітик': ['Ні', 'Так'], 'Сплячий кітик': ['Ні', 'Ні', 'Ні', 'Так'],
+                       'Грайливий кітик': ['Ні', 'Так', 'Так', 'Так'], 'Бойовий кітик': ['Ні', 'Так'],
+                       'Кітик гурман': ['Ні', 'Так'], 'Кітик вампір': ['Ні', 'Так'],
+                       'Кітик комуніст': ['Ні', 'Так'], 'Наркіт': ['Ні', 'Так']}
+        max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
+        for i in range(1, max_id + 1):
+            user_time = self.c.execute("SELECT create_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
+            if strftime('%H:%M') in time_list(user_time, "wanna_play") and \
+                    self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров':
+                wanna_play = self.c.execute("SELECT wanna_play FROM user_data WHERE id = ?", (i,)).fetchone()[0]
+                if wanna_play != 'Так':
+                    clas = self.c.execute("SELECT class FROM user_data WHERE id = ?", (i,)).fetchone()[0]
+                    self.c.execute("UPDATE user_data SET wanna_play = ? WHERE id = ?", (random.choice(play_chance[clas]), i))
+                else:
+                    not_play_times = self.c.execute("SELECT not_play_times FROM user_data WHERE id = ?", (i,)).fetchone()[0]
+                    if not_play_times < 5:
+                        self.c.execute("UPDATE user_data SET not_play_times = ? WHERE id = ?", (not_play_times + 1, i))
+                    else:
+                        happiness = self.c.execute("SELECT happiness FROM user_data WHERE id = ?", (i,)).fetchone()[0]
+                        if happiness - 10 > 0:
+                            happiness = happiness - 10
+                        else:
+                            happiness = 0
+                        self.c.execute("UPDATE user_data SET happiness = ? WHERE id = ?", (happiness, i))
+        self.conn.commit()
+
+    async def all_job(self):
+        job_money = {'Бізнесмен': 5, 'Банкір': 5, 'Офіціант': 5, 'Будівельник': 5,
+                     'Військовий': 5, 'Шпигун': 5, 'Психолог': 5, 'Програміст': 5,
+                     'Вчений': 5, 'Сомільє': 5, 'Менеджер': 5, 'Інвестор': 5,
+                     'Кухар': 5, 'Льотчик': 5, 'Журналіст': 5, 'Космонавт': 5}
+        max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
+        for i in range(1, max_id + 1):
+            user_time = self.c.execute("SELECT job_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
+            if user_time != '':
+                if strftime('%H:%M') in time_list(user_time, "job") and \
+                        self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров':
+                    money = self.c.execute("SELECT money FROM user_data WHERE id = ?", (i,)).fetchone()[0]
+                    if self.c.execute("SELECT job_status FROM job_data WHERE id = ?", (i,)).fetchone()[0] == 'На роботі':
+                        job = self.c.execute("SELECT job FROM job_data WHERE id = ?", (i,)).fetchone()[0]
+                        job_hours = self.c.execute("SELECT job_hours FROM job_data WHERE id = ?", (i,)).fetchone()[0]
+                        self.c.execute("UPDATE user_data SET money = ? WHERE id = ?", (money + job_money[job], i))
+                        self.c.execute("UPDATE job_data SET job_hours = ? WHERE id = ?", (job_hours + 1, i))
+                    elif self.c.execute("SELECT job_status FROM job_data WHERE id = ?", (i,)).fetchone()[0] == 'У відпустці':
+                        vacation_hours = self.c.execute("SELECT vacation_hours FROM job_data WHERE id = ?", (i,)).fetchone()[0]
+                        self.c.execute("UPDATE user_data SET money = ? WHERE id = ?", (money + 8, i))
+                        self.c.execute("UPDATE job_data SET vacation_hours = ? WHERE id = ?", (vacation_hours - 1, i))
+                        if vacation_hours - 1 == 0:
+                            self.c.execute("UPDATE job_data SET job_status = ? WHERE id = ?", ('Не працює', i))
+                            self.c.execute("UPDATE job_data SET vacation_place = ? WHERE id = ?", ('', i))
+                            self.c.execute("UPDATE time_data SET job_time = ? WHERE id = ?", ('', i))
+                    elif self.c.execute("SELECT job_status FROM job_data WHERE id = ?", (i,)).fetchone()[0] == 'На пенсії':
+                        self.c.execute("UPDATE user_data SET money = ? WHERE id = ?", (money + 15, i))
+        self.conn.commit()
+
+    async def all_stop_working(self):
+        max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
+        for i in range(1, max_id + 1):
+            user_time = self.c.execute("SELECT job_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
+            if user_time != '':
+                if strftime('%H:%M') == time_list(user_time, "working") and \
+                        self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров' and \
+                        self.c.execute("SELECT job_status FROM job_data WHERE id = ?", (i,)).fetchone()[0] == 'На роботі':
+                    self.c.execute("UPDATE job_data SET job_status = ? WHERE id = ?", ('Не працює', i))
+                    self.c.execute("UPDATE time_data SET job_time = ? WHERE id = ?", ('', i))
+        self.conn.commit()
+
+    async def not_doing(self):
+        max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
+        for i in range(1, max_id + 1):
+            user_time = self.c.execute("SELECT create_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
+            if strftime('%H:%M') in time_list(user_time, "not_doing") and \
+                    self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров':
+                hungry = self.c.execute("SELECT hungry FROM user_data WHERE id = ?", (i,)).fetchone()[0]
+                happiness = self.c.execute("SELECT happiness FROM user_data WHERE id = ?", (i,)).fetchone()[0]
+                if hungry == 0 and happiness == 0:
+                    zero_times = self.c.execute("SELECT zero_times FROM user_data WHERE id = ?", (i,)).fetchone()[0]
+                    if zero_times < 6:
+                        self.c.execute("UPDATE user_data SET zero_times = ? WHERE id = ?", (zero_times + 1, i))
+                    else:
+                        self.c.execute("UPDATE user_data SET health = ? WHERE id = ?", ('Мертвий', i))
+                        self.c.execute("UPDATE user_data SET kill_ever = ? WHERE id = ?", (3, i))
+        self.conn.commit()
 
     def get_data(self, user_id: int, chat_id: int, table: str, target: str):
         return self.c.execute(f"SELECT {target} FROM {table} WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone()[0]
@@ -458,7 +583,7 @@ class Database:
                 else:
                     hour = {0: 'годин', 1: 'годину', 2: 'години'}
                     minute = {1: 'хвилину', 2: 'хвилини', 3: 'хвилини', 4: 'хвилини', 5: 'хвилин',
-                              6: 'хвилин', 7: 'хвилин', 8: 'хвилин', 9: 'хвилин'}
+                              6: 'хвилин', 7: 'хвилин', 8: 'хвилин', 9: 'хвилин', 0: 'хвилин'}
                     feed_time = self.get_data(user_id, chat_id, 'time_data', 'feed_time')
                     feed_time_list = time_list(feed_time, 'feed')
                     index = 0
@@ -471,7 +596,7 @@ class Database:
                     feed = f" через"
                     if time_[:1] != 0:
                         feed = feed + f" {time_[:1]} {hour[int(time_[:1])]}"
-                    feed = feed + f" {time_[2:]} {minute[int(time_[3:])]}"
+                    feed = feed + f" {int(time_[2:])} {minute[int(time_[3:])]}"
                 info = f"🐱Ім'я: {list_[4]}\n🥩Можна погодувати{feed}\n🧩Хоче гратися: {list_[11]}\n"
                 if int(self.get_data(user_id, chat_id, 'user_data', 'under_level')) >= 15:
                     if list_[22] == 0:
@@ -490,14 +615,14 @@ class Database:
             if list_[4] == 'На роботі':
                 hour = {0: 'годин', 1: 'годину', 2: 'години', 3: 'години', 4: 'години'}
                 minute = {1: 'хвилину', 2: 'хвилини', 3: 'хвилини', 4: 'хвилини', 5: 'хвилин',
-                          6: 'хвилин', 7: 'хвилин', 8: 'хвилин', 9: 'хвилин'}
+                          6: 'хвилин', 7: 'хвилин', 8: 'хвилин', 9: 'хвилин', 0: 'хвилин'}
                 job_time = self.get_data(user_id, chat_id, 'time_data', 'job_time')
                 stop_job_time = time_list(job_time, 'working')
                 time_ = str(datetime.strptime(stop_job_time, "%H:%M") - datetime.strptime(strftime("%H:%M"), "%H:%M"))[:4]
                 info = f"🛠Повернеться додому через"
                 if time_[:1] != 0:
                     info = info + f" {time_[:1]} {hour[int(time_[:1])]}"
-                info = info + f" {time_[2:]} {minute[int(time_[3:])]}"
+                info = info + f" {int(time_[2:])} {minute[int(time_[3:])]}"
             elif list_[4] == 'У відпустці':
                 day = {0: 'днів', 1: 'день', 2: 'дні', 3: 'дні', 4: 'дні', 5: 'днів', 6: 'днів', 7: 'днів', 8: 'днів',
                        9: 'днів', 10: 'днів', 11: 'днів', 12: 'днів', 13: 'днів', 14: 'днів'}
@@ -533,129 +658,6 @@ class Database:
             else:
                 cats = cats[:len(cats) - 2]
             return f"🧿Власник: {owner}\n❇️Розташування: {list_[10]}\n✨Рівень: {list_[9]}\n🐱Мешканці: {cats}\n"
-
-    def all_feed(self):
-        max_ = {'Домашній кітик': 4, 'Сплячий кітик': 3, 'Грайливий кітик': 5, 'Бойовий кітик': 4,
-                'Кітик гурман': 5, 'Кітик вампір': 5, 'Кітик комуніст': 5, 'Наркіт': 5}
-        max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
-        for i in range(1, max_id + 1):
-            user_time = self.c.execute("SELECT feed_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
-            if strftime('%H:%M') in time_list(user_time, "feed") and \
-                    self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров':
-                feed_limit = self.c.execute("SELECT feed_limit FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                if feed_limit < max_[self.c.execute("SELECT class FROM user_data WHERE id = ?", (i,)).fetchone()[0]]:
-                    self.c.execute("UPDATE user_data SET feed_limit = ? WHERE id = ?", (feed_limit + 1, i))
-        self.conn.commit()
-
-    def all_hungry(self):
-        hungry_minus = {'Домашній кітик': 5, 'Сплячий кітик': 5, 'Грайливий кітик': 6, 'Бойовий кітик': 5,
-                        'Кітик гурман': 5, 'Кітик вампір': 5, 'Кітик комуніст': 5, 'Наркіт': 5}
-        max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
-        for i in range(1, max_id + 1):
-            user_time = self.c.execute("SELECT create_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
-            if strftime('%H:%M') in time_list(user_time, "hungry") and \
-                    self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров':
-                hungry = self.c.execute("SELECT hungry FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                if hungry != 0:
-                    clas = self.c.execute("SELECT class FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                    if hungry - hungry_minus[clas] > 0:
-                        hungry = hungry - hungry_minus[clas]
-                    else:
-                        hungry = 0
-                    self.c.execute("UPDATE user_data SET hungry = ? WHERE id = ?", (hungry, i))
-                else:
-                    happiness = self.c.execute("SELECT happiness FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                    if happiness - 5 > 0:
-                        happiness = happiness - 5
-                    else:
-                        happiness = 0
-                    self.c.execute("UPDATE user_data SET happiness = ? WHERE id = ?", (happiness, i))
-        self.conn.commit()
-
-    def all_wanna_play(self):
-        play_chance = {'Домашній кітик': ['Ні', 'Так'], 'Сплячий кітик': ['Ні', 'Ні', 'Ні', 'Так'],
-                       'Грайливий кітик': ['Ні', 'Так', 'Так', 'Так'], 'Бойовий кітик': ['Ні', 'Так'],
-                       'Кітик гурман': ['Ні', 'Так'], 'Кітик вампір': ['Ні', 'Так'],
-                       'Кітик комуніст': ['Ні', 'Так'], 'Наркіт': ['Ні', 'Так']}
-        max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
-        for i in range(1, max_id + 1):
-            user_time = self.c.execute("SELECT create_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
-            if strftime('%H:%M') in time_list(user_time, "wanna_play") and \
-                    self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров':
-                wanna_play = self.c.execute("SELECT wanna_play FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                if wanna_play != 'Так':
-                    clas = self.c.execute("SELECT class FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                    self.c.execute("UPDATE user_data SET wanna_play = ? WHERE id = ?", (random.choice(play_chance[clas]), i))
-                else:
-                    not_play_times = self.c.execute("SELECT not_play_times FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                    if not_play_times < 5:
-                        self.c.execute("UPDATE user_data SET not_play_times = ? WHERE id = ?", (not_play_times + 1, i))
-                    else:
-                        happiness = self.c.execute("SELECT happiness FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                        if happiness - 10 > 0:
-                            happiness = happiness - 10
-                        else:
-                            happiness = 0
-                        self.c.execute("UPDATE user_data SET happiness = ? WHERE id = ?", (happiness, i))
-        self.conn.commit()
-
-    def all_job(self):
-        job_money = {'Бізнесмен': 5, 'Банкір': 5, 'Офіціант': 5, 'Будівельник': 5,
-                     'Військовий': 5, 'Шпигун': 5, 'Психолог': 5, 'Програміст': 5,
-                     'Вчений': 5, 'Сомільє': 5, 'Менеджер': 5, 'Інвестор': 5,
-                     'Кухар': 5, 'Льотчик': 5, 'Журналіст': 5, 'Космонавт': 5}
-        max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
-        for i in range(1, max_id + 1):
-            user_time = self.c.execute("SELECT job_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
-            if user_time != '':
-                if strftime('%H:%M') in time_list(user_time, "job") and \
-                        self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров':
-                    money = self.c.execute("SELECT money FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                    if self.c.execute("SELECT job_status FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'На роботі':
-                        job = self.c.execute("SELECT job FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                        job_hours = self.c.execute("SELECT job_hours FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                        self.c.execute("UPDATE user_data SET money = ? WHERE id = ?", (money + job_money[job], i))
-                        self.c.execute("UPDATE user_data SET job_hours = ? WHERE id = ?", (job_hours + 1, i))
-                    elif self.c.execute("SELECT job_status FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'У відпустці':
-                        vacation_hours = self.c.execute("SELECT vacation_hours FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                        self.c.execute("UPDATE user_data SET money = ? WHERE id = ?", (money + 8, i))
-                        self.c.execute("UPDATE user_data SET vacation_hours = ? WHERE id = ?", (vacation_hours - 1, i))
-                        if vacation_hours - 1 == 0:
-                            self.c.execute("UPDATE user_data SET job_status = ? WHERE id = ?", ('Не працює', i))
-                            self.c.execute("UPDATE user_data SET vacation_place = ? WHERE id = ?", ('', i))
-                            self.c.execute("UPDATE time_data SET job_time = ? WHERE id = ?", ('', i))
-                    elif self.c.execute("SELECT job_status FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'На пенсії':
-                        self.c.execute("UPDATE user_data SET money = ? WHERE id = ?", (money + 15, i))
-        self.conn.commit()
-
-    def all_stop_working(self):
-        max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
-        for i in range(1, max_id + 1):
-            user_time = self.c.execute("SELECT job_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
-            if user_time != '':
-                if strftime('%H:%M') == time_list(user_time, "working") and \
-                        self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров' and \
-                        self.c.execute("SELECT job_status FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'На роботі':
-                    self.c.execute("UPDATE user_data SET job_status = ? WHERE id = ?", ('Не працює', i))
-                    self.c.execute("UPDATE time_data SET job_time = ? WHERE id = ?", ('', i))
-        self.conn.commit()
-
-    def not_doing(self):
-        max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
-        for i in range(1, max_id + 1):
-            user_time = self.c.execute("SELECT create_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
-            if strftime('%H:%M') in time_list(user_time, "not_doing") and \
-                    self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров':
-                hungry = self.c.execute("SELECT hungry FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                happiness = self.c.execute("SELECT happiness FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                if hungry == 0 and happiness == 0:
-                    zero_times = self.c.execute("SELECT zero_times FROM user_data WHERE id = ?", (i,)).fetchone()[0]
-                    if zero_times < 6:
-                        self.c.execute("UPDATE user_data SET zero_times = ? WHERE id = ?", (zero_times + 1, i))
-                    else:
-                        self.c.execute("UPDATE user_data SET health = ? WHERE id = ?", ('Мертвий', i))
-                        self.c.execute("UPDATE user_data SET kill_ever = ? WHERE id = ?", (3, i))
-        self.conn.commit()
 
     def return_max_id(self, table: str):
         return self.c.execute(f"SELECT MAX(id) FROM {table}").fetchall()[0][0]
