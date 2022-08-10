@@ -15,8 +15,8 @@ data = Database()
 text = {'/start': "Щоб нарешті отримати свого котика, додай мене в групу з друзями і надай усі права!",
         '/help': "<a href = 'https://telegra.ph/Kotobot-Manual-08-03'>Гайд по Котоботу</a>\n\n"
                  "<a href = 'https://telegra.ph/Spisok-komand-08-09'>Усі команди</a>\n"}
-rz = {0: 'разів', 1: 'раз', 2: 'раза', 3: 'рази', 4: 'рази', 5: 'раз',
-      6: 'раз', 7: 'раз', 8: 'раз', 9: 'раз', 10: 'раз'}
+rz = {0: 'разів', 1: 'раз', 2: 'раза', 3: 'рази', 4: 'рази', 5: 'разів',
+      6: 'разів', 7: 'разів', 8: 'разів', 9: 'разів', 10: 'разів'}
 jobs_choice = {'Домашній кітик': CatJobs, 'Сплячий кітик': CatJobs1,
                'Грайливий кітик': CatJobs2, 'Бойовий кітик': CatJobs3, 'Кітик гурман': CatJobs4}
 classes = ['Домашній кітик', 'Сплячий кітик', 'Грайливий кітик', 'Бойовий кітик', 'Кітик гурман']
@@ -184,13 +184,10 @@ async def commands(message: types.Message):
                     else:
                         under_level = data.get_data(user_id, chat_id, 'user_data', 'under_level')
                         level = data.get_data(user_id, chat_id, 'user_data', 'level')
-                        await data.change_hungry(user_id, chat_id)
+                        await data.change_hungry(user_id, chat_id, feed_limit)
                         under_level_after = data.get_data(user_id, chat_id, 'user_data', 'under_level')
                         level_after = data.get_data(user_id, chat_id, 'user_data', 'level')
-                        if feed_limit-1 != 0:
-                            await bot.send_message(chat_id, f"Можна нагодувати ще {feed_limit-1} {rz[feed_limit-1]})")
-                        else:
-                            await bot.send_message(chat_id, f"Ви погодували котика максимальну кількість разів")
+                        await bot.send_message(chat_id, f"Можна нагодувати котика {feed_limit} {rz[feed_limit]})")
                         if level != level_after:
                             await bot.send_message(chat_id, "Статус і рівень підвищенно!")
                         elif under_level < under_level_after:

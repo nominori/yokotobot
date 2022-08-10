@@ -185,20 +185,6 @@ class Database:
                        (name_sets, user_id, chat_id))
         self.conn.commit()
 
-    async def change_feed(self, user_id: int, chat_id: int, target: str):
-        feed_limit = self.c.execute("SELECT feed_limit FROM user_data WHERE user_id = ? AND chat_id = ?",
-                                    (user_id, chat_id)).fetchone()[0]
-        if target == '-' and feed_limit > 0:
-            feed_limit = feed_limit - 1
-            if feed_limit == 0:
-                self.c.execute("UPDATE time_data SET feed_time = ? WHERE user_id = ? AND chat_id = ?",
-                               (strftime("%H:%M"), user_id, chat_id))
-        elif target == '+':
-            feed_limit = feed_limit + 1
-        self.c.execute("UPDATE user_data SET feed_limit = ? WHERE user_id = ? AND chat_id = ?",
-                       (feed_limit, user_id, chat_id))
-        self.conn.commit()
-
     async def change_command(self, user_id: int, chat_id: int, command: str):
         self.c.execute("UPDATE user_data SET command = ? WHERE user_id = ? AND chat_id = ?",
                        (command, user_id, chat_id))
@@ -273,24 +259,29 @@ class Database:
                        (happiness, user_id, chat_id))
         self.conn.commit()
 
-    async def change_hungry(self, user_id: int, chat_id: int):
+    async def change_hungry(self, user_id: int, chat_id: int, feed_limit: int):
         hungry_plus = {'Домашній кітик': 15, 'Сплячий кітик': 20, 'Грайливий кітик': 16, 'Бойовий кітик': 17,
                        'Кітик гурман': 20, 'Кітик вампір': 20, 'Кітик комуніст': 20, 'Наркіт': 20}
         happiness = {'Домашній кітик': 5, 'Сплячий кітик': 6, 'Грайливий кітик': 5, 'Бойовий кітик': 7,
                      'Кітик гурман': 10, 'Кітик вампір': 8, 'Кітик комуніст': 8, 'Наркіт': 8}
-        await self.change_feed(user_id, chat_id, '-')
         hungry = self.c.execute("SELECT hungry FROM user_data WHERE user_id = ? AND chat_id = ?",
                                 (user_id, chat_id)).fetchone()[0]
         clas = self.c.execute("SELECT class FROM user_data WHERE user_id = ? AND chat_id = ?",
                               (user_id, chat_id)).fetchone()[0]
-        if hungry + hungry_plus[clas] >= 100:
-            hungry = 30
+        if hungry + (hungry_plus[clas]*feed_limit) >= 100:
+            hungry = hungry + (hungry_plus[clas]*feed_limit) - 100
+            if hungry < 30:
+                hungry = 30
             await self.level_up(user_id, chat_id)
         else:
-            hungry = hungry + hungry_plus[clas]
+            hungry = hungry + (hungry_plus[clas]*feed_limit)
         self.c.execute("UPDATE user_data SET hungry = ? WHERE user_id = ? AND chat_id = ?", (hungry, user_id, chat_id))
+        self.c.execute("UPDATE time_data SET feed_time = ? WHERE user_id = ? AND chat_id = ?",
+                       (strftime("%H:%M"), user_id, chat_id))
+        self.c.execute("UPDATE user_data SET feed_limit = ? WHERE user_id = ? AND chat_id = ?",
+                       (0, user_id, chat_id))
         self.conn.commit()
-        await self.change_happiness(user_id, chat_id, happiness[clas])
+        await self.change_happiness(user_id, chat_id, happiness[clas]*feed_limit)
 
     async def change_wanna_play(self, user_id: int, chat_id: int):
         happiness = {'Домашній кітик': 20, 'Сплячий кітик': 25, 'Грайливий кітик': 20, 'Бойовий кітик': 15,
@@ -583,8 +574,8 @@ class Database:
                        f"❇️Тип: {list_[7]}\n🧿Клас: {list_[8]}\n❤️Здоров'я: {list_[15]}\n🥩Ситість: {list_[9]}/100\n" \
                        f"🌈Рівень щастя: {list_[13]}/100\n"
             elif target == 'cat_info':
-                rz = {1: 'раз', 2: 'раза', 3: 'рази', 4: 'рази', 5: 'раз',
-                      6: 'раз', 7: 'раз', 8: 'раз', 9: 'раз', 10: 'раз'}
+                rz = {1: 'раз', 2: 'раза', 3: 'рази', 4: 'рази', 5: 'разів',
+                      6: 'разів', 7: 'разів', 8: 'разів', 9: 'разів', 10: 'разів'}
                 if list_[10] != 0:
                     feed = f": {list_[10]} {rz[list_[10]]}"
                 else:
