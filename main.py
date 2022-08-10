@@ -178,16 +178,17 @@ async def commands(message: types.Message):
                 elif message.text == 'Нагодувати':
                     feed_limit = data.get_data(user_id, chat_id, 'user_data', 'feed_limit')
                     if feed_limit == 0:
-                        await bot.send_message(chat_id, f"Ви погодували {user_name} максимальну кількість раз")
+                        await bot.send_message(chat_id, f"Ви погодували котика максимальну кількість разів")
                     else:
                         under_level = data.get_data(user_id, chat_id, 'user_data', 'under_level')
                         level = data.get_data(user_id, chat_id, 'user_data', 'level')
                         await data.change_hungry(user_id, chat_id)
                         under_level_after = data.get_data(user_id, chat_id, 'user_data', 'under_level')
                         level_after = data.get_data(user_id, chat_id, 'user_data', 'level')
-                        feed_limit_after = data.get_data(user_id, chat_id, 'user_data', 'feed_limit')
-                        await bot.send_message(chat_id, f"Ви погодували {user_name}! (Можна погодувати ще "
-                                                        f"{feed_limit_after} {rz[feed_limit_after]})")
+                        if feed_limit-1 != 0:
+                            await bot.send_message(chat_id, f"Можна нагодувати ще {feed_limit-1} {rz[feed_limit-1]})")
+                        else:
+                            await bot.send_message(chat_id, f"Ви погодували котика максимальну кількість разів")
                         if level != level_after:
                             await bot.send_message(chat_id, "Статус і рівень підвищенно!")
                         elif under_level < under_level_after:
@@ -606,7 +607,7 @@ async def do(message: types.Message):
                     await bot.send_message(chat_id, "Ім'я вже зайнято, спробуйте ще раз")
                 else:
                     await data.set_name(user_id, chat_id, message.text)
-                    await data.change_command(user_id, chat_id, '')
+                    await data.clear_command(user_id, chat_id)
                     await send_cat_data(user_id, chat_id)
             elif command == 'Вбити котика':
                 if message.text == 'Tак, я хочу вбити свого котика':
@@ -615,7 +616,7 @@ async def do(message: types.Message):
                 elif message.text == 'Ні':
                     await data.kill(user_id, chat_id, 'wanted')
                     await bot.send_message(chat_id, "Як добре, що ви одумались, але інтернет все пам'ятає!")
-                await data.change_command(user_id, chat_id, '')
+                await data.clear_command(user_id, chat_id)
             elif command == 'Відпустка':
                 if message.text not in [f"{j+1}" for j in range(5)]:
                     await bot.send_message(chat_id, "Не вірно введені данні, спробуйте ще раз")
@@ -627,7 +628,7 @@ async def do(message: types.Message):
                 await data.vacation(user_id, chat_id, message.text)
                 days = int(data.get_data(user_id, chat_id, 'job_data', 'vacation_hours')/24)
                 place = data.get_data(user_id, chat_id, 'job_data', 'vacation_place')
-                await data.change_command(user_id, chat_id, '')
+                await data.clear_command(user_id, chat_id)
                 await bot.send_message(chat_id, f"{user_name} поїхав у відпустку на {days} днів у {place}")
             elif command == 'Узгодження весілля':
                 user2_id = data.get_data(user_id, chat_id, 'user_data', 'command_user2_id')
@@ -635,18 +636,16 @@ async def do(message: types.Message):
                 if message.text == 'Так':
                     await data.married(chat_id, user_id, user2_id)
                     await data.married(chat_id, user2_id, user_id)
-                    await data.change_command(user_id, chat_id, '')
-                    await data.change_command_user2_id(user_id, chat_id, 0)
-                    await data.change_command(user2_id, chat_id, '')
+                    await data.clear_command(user_id, chat_id)
+                    await data.clear_command(user2_id, chat_id)
                     await bot.send_message(chat_id, f"{user_name} тепер офіційно у шлюбі з {user2_name}")
                 elif message.text == 'Ні':
-                    await data.change_command(user_id, chat_id, '')
-                    await data.change_command_user2_id(user_id, chat_id, 0)
-                    await data.change_command(user2_id, chat_id, '')
+                    await data.clear_command(user_id, chat_id)
+                    await data.clear_command(user2_id, chat_id)
                     await bot.send_message(chat_id, f"{user2_name}, на жаль {user_name} відмовив(-ла) вам")
             elif command == 'Розлучення':
                 if message.text == 'Ні':
-                    await data.change_command(user_id, chat_id, '')
+                    await data.clear_command(user_id, chat_id)
                     await bot.send_message(chat_id, "Ви відмінили розлучення!")
                 elif message.text == 'Так':
                     await bot.send_message(chat_id, f"{user2_name}, Ви згодні розлучитись з {user_name}? (Так/Ні)")
@@ -655,39 +654,35 @@ async def do(message: types.Message):
             elif command == 'Узгодження розлучення':
                 if message.text == 'Так':
                     await data.married_break(chat_id, user_id, user2_id)
-                    await data.change_command(user_id, chat_id, '')
-                    await data.change_command(user2_id, chat_id, '')
-                    await data.change_command_user2_id(user_id, chat_id, 0)
+                    await data.clear_command(user_id, chat_id)
+                    await data.clear_command(user2_id, chat_id)
                     await bot.send_message(chat_id, f"{user_name} і {user2_name} більше не у шлюбі")
                 elif message.text == 'Ні':
-                    await data.change_command(user_id, chat_id, '')
-                    await data.change_command(user2_id, chat_id, '')
-                    await data.change_command_user2_id(user_id, chat_id, 0)
+                    await data.clear_command(user_id, chat_id)
+                    await data.clear_command(user2_id, chat_id)
                     await bot.send_message(chat_id, f"{user_name}, на жаль {user2_name} відмовив(-ла) вам")
             elif command == 'Узгодження кошеняток':
                 if message.text == 'Так':
                     await data.kittens(chat_id, user_id, user2_id)
-                    await data.change_command(user_id, chat_id, '')
-                    await data.change_command(user2_id, chat_id, '')
+                    await data.clear_command(user_id, chat_id)
+                    await data.clear_command(user2_id, chat_id)
                     await bot.send_message(chat_id, f"{user_name} і {user2_name} тепер мають милих кошенят!",
                                            reply_markup=KittensData)
                 elif message.text == 'Ні':
-                    await data.change_command(user_id, chat_id, '')
-                    await data.change_command(user2_id, chat_id, '')
+                    await data.clear_command(user_id, chat_id)
+                    await data.clear_command(user2_id, chat_id)
                     await bot.send_message(chat_id, f"{user_name}, на жаль {user2_name} відмовив(-ла) вам")
             elif command == 'Узгодження запрошення':
                 user2_id = data.get_data(user_id, chat_id, 'user_data', 'command_user2_id')
                 user2_name = data.get_data(user2_id, chat_id,  'user_data', 'name')
                 if message.text == 'Так':
                     await data.add_user_to_apartment(user2_id, chat_id, user_id)
-                    await data.change_command(user_id, chat_id, '')
-                    await data.change_command_user2_id(user_id, chat_id, 0)
-                    await data.change_command(user2_id, chat_id, '')
+                    await data.clear_command(user_id, chat_id)
+                    await data.clear_command(user2_id, chat_id)
                     await bot.send_message(chat_id, f"{user_name} тепер живе з {user2_name}")
                 elif message.text == 'Ні':
-                    await data.change_command(user_id, chat_id, '')
-                    await data.change_command_user2_id(user_id, chat_id, 0)
-                    await data.change_command(user2_id, chat_id, '')
+                    await data.clear_command(user_id, chat_id)
+                    await data.clear_command(user2_id, chat_id)
                     await bot.send_message(chat_id, f"{user2_name}, на жаль {user_name} відмовив(-ла) вам")
             elif command == 'Узгодження переїзду':
                 user2_id = data.get_data(user_id, chat_id, 'user_data', 'command_user2_id')
@@ -726,11 +721,11 @@ async def allways():
         await data.all_wanna_play()
         await data.all_hungry()
         await data.all_job()
-        await data.not_doing()
         await data.all_stop_working()
-        await asyncio.sleep(60)
+        await data.not_doing()
+        await asyncio.sleep(1)
 
 if __name__ == '__main__':
-    asyncio.gather(data.init_db())
+    data.init_db()
     asyncio.gather(allways())
     asyncio.gather(executor.start_polling(dp, skip_updates=True))
