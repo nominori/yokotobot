@@ -37,31 +37,42 @@ async def send_cat_data(user_id, chat_id):
 
 async def send_cat_info(user_id, chat_id):
     action_cat = InlineKeyboardMarkup()
-    if data.get_data(user_id, chat_id, 'user_data', 'feed_limit') > 0 and \
-            data.get_data(user_id, chat_id, 'user_data', 'wanna_play') == 'Так':
-        action_cat = InlineKeyboardMarkup(row_width=2).add(cat_buttons[5], cat_buttons[6])
-    elif data.get_data(user_id, chat_id, 'user_data', 'feed_limit') > 0:
-        action_cat.add(cat_buttons[5])
-    elif data.get_data(user_id, chat_id, 'user_data', 'wanna_play') == 'Так':
-        action_cat.add(cat_buttons[6])
+    buttons_list = []
+    if data.get_data(user_id, chat_id, 'user_data', 'feed_limit') > 0:
+        buttons_list.append(cat_buttons[5])
+    if data.get_data(user_id, chat_id, 'user_data', 'wanna_play') == 'Так':
+        buttons_list.append(cat_buttons[6])
+    if len(buttons_list) == 1:
+        action_cat = InlineKeyboardMarkup().add(buttons_list[0])
+    elif len(buttons_list) == 2:
+        action_cat = InlineKeyboardMarkup(row_width=2).add(buttons_list[0], buttons_list[1])
     await bot.send_message(chat_id, data.get_all_data(user_id, chat_id, 'user_data', 'cat_info'), reply_markup=action_cat)
 
 
 async def send_cat_job(user_id, chat_id):
     action_cat = InlineKeyboardMarkup()
+    buttons_list = []
     if data.get_data(user_id, chat_id, 'job_data', 'job') == 'Нема':
-        action_cat.add(cat_buttons[7])
+        buttons_list.append(cat_buttons[7])
     elif data.get_data(user_id, chat_id, 'job_data', 'job_status') == 'Не працює':
-        action_cat.add(cat_buttons[8])
+        buttons_list.append(cat_buttons[8])
     if data.get_data(user_id, chat_id, 'job_data', 'job_hours') >= 100 * (data.get_data(user_id, chat_id, 'job_data', 'vacation') + 1) and \
             data.get_data(user_id, chat_id, 'job_data', 'job_status') not in ['У відпустці', 'На пенсії', 'На роботі']:
-        action_cat.add(cat_buttons[9])
+        buttons_list.append(cat_buttons[9])
     if data.get_data(user_id, chat_id, 'job_data', 'job_changes') > 0 and \
             data.get_data(user_id, chat_id, 'job_data', 'job_status') not in ['У відпустці', 'На пенсії', 'На роботі']:
-        action_cat.add(cat_buttons[10])
+        buttons_list.append(cat_buttons[10])
     if data.get_data(user_id, chat_id, 'job_data', 'job_status') == 'Не працює' and \
             data.get_data(user_id, chat_id, 'user_data', 'under_level') >= 40 and data.get_data(user_id, chat_id, 'job_data', 'job_hours') >= 500:
-        action_cat.add(cat_buttons[11])
+        buttons_list.append(cat_buttons[11])
+    if len(buttons_list) == 1:
+        action_cat = InlineKeyboardMarkup().add(buttons_list[0])
+    elif len(buttons_list) == 2:
+        action_cat = InlineKeyboardMarkup(row_width=2).add(buttons_list[0], buttons_list[1])
+    elif len(buttons_list) == 3:
+        action_cat = InlineKeyboardMarkup(row_width=2).add(buttons_list[0], buttons_list[1], buttons_list[2])
+    elif len(buttons_list) == 4:
+        action_cat = InlineKeyboardMarkup(row_width=2).add(buttons_list[0], buttons_list[1], buttons_list[2], buttons_list[3])
     await bot.send_message(chat_id, data.get_all_data(user_id, chat_id, 'job_data', 'job_data'),
                            reply_markup=action_cat)
 
@@ -69,10 +80,10 @@ async def send_cat_job(user_id, chat_id):
 @dp.message_handler(commands=['start', 'help'])
 async def start(message: types.Message):
     photo = open("photos/main.PNG", 'rb')
+    message.text = message.text.replace(f'{Bot_ID}', '')
     if message.text == '/start' and message.chat.type == 'private':
-        await bot.send_photo(message.chat.id, photo, caption=text[message.text], reply_markup=AddGroup, parse_mode='HTML')
-    message.text = message.text.replace(f'{Bot_ID} ', '')
-    if message.text == '/help':
+        await bot.send_message(message.chat.id, text[message.text], reply_markup=AddGroup, parse_mode='HTML')
+    elif message.text == '/help':
         await bot.send_photo(message.chat.id, photo, caption=text[message.text], parse_mode='HTML')
 
 
@@ -159,7 +170,7 @@ async def commands(message: types.Message):
                         photo = open("photos/" + data.get_data(user_id, chat_id, 'kittens_data', 'photo'), 'rb')
                         await bot.send_photo(chat_id, photo, caption=data.get_all_data(user_id, chat_id, 'kittens_data', 'kitten_data'))
                 elif message.text == "Магазин":
-                    await bot.send_message(chat_id, "Квартира - 100 монет\nДім - 10000 монет")
+                    await bot.send_message(chat_id, "Квартира - 100 монет\n")
                 elif message.text == 'Вбити котика':
                     data.change_command(user_id, chat_id, 'Вбити котика')
                     await bot.send_message(chat_id, "Ви точно хочете це зробити? (напишіть 'Ні' або "
@@ -250,12 +261,12 @@ async def commands(message: types.Message):
                         await bot.send_message(chat_id, f"Ви маєте спочатку завести сім'ю")
                     elif data.get_data(user_id, chat_id, 'user_data', 'under_level') < 15:
                         await bot.send_message(chat_id, f"Спочатку ви маєте досягнути 20 рівня!")
-                    elif data.get_data(user2_id, chat_id, 'user_data', 'kittens') != 0:
+                    elif data.kittens_exist(user2_id, chat_id) == 1:
                         await bot.send_message(chat_id, f"{user2_name} вже має кошеняток!")
                     elif data.get_data(user2_id, chat_id, 'user_data', 'under_level') < 15:
                         await bot.send_message(chat_id, f"{user2_name} має досягнути 20 рівня!")
                     else:
-                        await bot.send_message(chat_id, f"{user2_name}, Ви згодні завести кошеняток з {user_name}? (Так/Ні)")
+                        await bot.send_message(chat_id, f"{user2_name}, ви згодні завести кошеняток з {user_name}? (Так/Ні)")
                         data.change_command(user2_id, chat_id, 'Узгодження кошеняток')
         else:
             await bot.send_message(chat_id, "Ти маєш спочатку отримати кота!", reply_markup=NewCat)
@@ -305,7 +316,7 @@ async def job_commands(message: types.Message):
                         await bot.send_message(chat_id, "Ви ще не обрали професію!")
                     else:
                         if job_status == 'Не працює':
-                            data.change_job_status(user_id, chat_id)
+                            data.start_working(user_id, chat_id)
                             await bot.send_message(chat_id,
                                                    f"{user_name} пішов(-ла) працювати! Робоча зміна закінчиться через 4 години.")
                         elif job_status == 'У відпустці':
@@ -712,23 +723,11 @@ async def job_choice(call: types.CallbackQuery):
 
 async def allways():
     while True:
-        await asyncio.sleep(3600)
+        await asyncio.sleep(60)
         data.all_feed()
         data.all_wanna_play()
         data.all_hungry()
-        data.all_working()
-        await asyncio.sleep(3600)
-        data.all_hungry()
-        data.all_working()
-        data.not_doing()
-        await asyncio.sleep(3600)
-        data.all_feed()
-        data.all_wanna_play()
-        data.all_hungry()
-        data.all_working()
-        await asyncio.sleep(3600)
-        data.all_hungry()
-        data.all_working()
+        data.all_job()
         data.not_doing()
         data.all_stop_working()
 
