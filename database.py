@@ -266,37 +266,6 @@ class Database:
                        (2, user_id, chat_id))
         self.conn.commit()
 
-    def get_data(self, user_id: int, chat_id: int, target: str):
-        rz = {'Ні': '', 1: 'раз', 2: 'раза', 3: 'рази', 4: 'рази', 5: 'раз',
-              6: 'раз', 7: 'раз', 8: 'раз', 9: 'раз', 10: 'раз'}
-        a = {'photo': 3, 'name': 4, 'level': 5, 'under_level': 6, 'type': 7, 'class': 8,
-             'hungry': 9, 'feed_limit': 10, 'wanna_play': 11, 'not_play_times': 12, 'happiness': 13,
-             'zero_times': 14, 'health': 15, 'money': 16, 'command': 17, 'command_user2_id': 18, 'name_sets': 19,
-             'kill_ever': 20, 'reborn': 21, 'married': 22, 'user2_id': 23}
-        list_ = list(self.c.execute("SELECT * FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone())
-        if target == 'cat_data':
-            return f"🐱Ім'я: {list_[4]}\n🧶Статус: {list_[5]}\n✨Рівень: {list_[6]}/50\n" \
-                   f"❇️Тип: {list_[7]}\n🧿Клас: {list_[8]}\n❤️Здоров'я: {list_[15]}\n🥩Ситість: {list_[9]}/100\n" \
-                   f"🌈Рівень щастя: {list_[13]}/100\n"
-        elif target == 'cat_info':
-            if list_[10] == 0:
-                list_[10] = 'Ні'
-            info = f"🐱Ім'я: {list_[4]}\n🥩Можна погодувати: {list_[10]} {rz[list_[10]]}\n🧩Хоче гратися: {list_[11]}\n"
-            if int(self.get_data(user_id, chat_id, 'under_level')) >= 15:
-                family = ''
-                if list_[22] == 0:
-                    family = "Нема"
-                elif list_[22] == 1:
-                    family = self.get_data(list_[23], chat_id, 'name')
-                elif list_[22] == 2:
-                    family = f"Розлучений з {self.get_data(list_[23], chat_id, 'name')}"
-                info = info + f"❤️Сім'я: {family}\n"
-            return info
-        elif target == 'cat_money':
-            return f"💰Ваш баланс: {list_[16]}"
-        else:
-            return list_[a[target]]
-
     def change_job(self, user_id: int, chat_id: int, new_job: str):
         self.c.execute("UPDATE job_data SET job = ? WHERE user_id = ? AND chat_id = ?",
                        (new_job, user_id, chat_id))
@@ -336,27 +305,6 @@ class Database:
         self.c.execute("UPDATE job_data SET job_status = ? WHERE user_id = ? AND chat_id = ?",
                        ('На пенсії', user_id, chat_id))
 
-    def get_job_data(self, user_id: int, chat_id: int, target: str):
-        day = {0: 'днів', 1: 'день', 2: 'дні', 3: 'дні', 4: 'дні', 5: 'днів', 6: 'днів', 7: 'днів', 8: 'днів',
-               9: 'днів', 10: 'днів', 11: 'днів', 12: 'днів', 13: 'днів', 14: 'днів'}
-        hour = {1: 'годину', 2: 'години', 3: 'години', 4: 'години', 6: 'годин', 7: 'годин', 8: 'годин',
-                9: 'годин', 10: 'годин', 11: 'годин', 12: 'годин', 13: 'годин', 14: 'годин', 15: 'годин',
-                16: 'годин', 17: 'годин', 18: 'годин', 19: 'годин', 20: 'годин', 21: 'годину', 22: 'години',
-                23: 'години'}
-        a = {'job': 3, 'job_status': 4, 'job_hours': 5, 'job_changes': 6,
-             'vacation': 7, 'vacation_place': 8, 'vacation_hours': 9}
-        list_ = list(self.c.execute("SELECT * FROM job_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone())
-        if target == 'cat_job':
-            vacation_info = ''
-            if list_[17] == 'У відпустці':
-                days = int(list_[31]/24)
-                hours = int(list_[31] % 24)
-                vacation_info = f"✨{list_[4]} полетів у {list_[30]}, його відпустка закінчиться через " \
-                                f"{days} {day[days]} і {hours} {hour[hours]}✨\n"
-            return f"🛠Професія: {list_[16]}\n🛠Відпрацьовані години: {list_[18]}\n🛠Статус: {list_[17]}\n" + vacation_info
-        else:
-            return list_[a[target]]
-
     def kittens_exist(self, chat_id: int, user_id: int):
         if self.c.execute("SELECT kittens FROM kittens_data WHERE user_id = ? AND chat_id = ?",
                           (user_id, chat_id)).fetchone() is not None or \
@@ -369,27 +317,11 @@ class Database:
     def kittens(self, chat_id: int, user_id: int, user2_id: int):
         number = random.choice([3, 4, 5])
         photo = random.choice(kitten_photos) + '.jpg'
-        type_ = random.choice(kitten_types[self.get_data(user_id, chat_id, 'type') +
-                                           self.get_data(user2_id, chat_id, 'type')])
+        type_ = random.choice(kitten_types[self.get_data(user_id, chat_id, 'user_data', 'type') +
+                                           self.get_data(user2_id, chat_id, 'user_data', 'type')])
         self.c.execute("INSERT INTO kittens_data (chat_id, user_id, user2_id, number, photo, type) "
                        "VALUES (?, ?, ?, ?, ?, ?)", (chat_id, user_id, user2_id, number, photo, type_))
         self.conn.commit()
-
-    def get_kitten_data(self, user_id: int, chat_id: int, target: str):
-        a = {'user_id': 2, 'user2_id': 3, 'number': 4, 'photo': 5, 'level': 6, 'type': 7}
-        if self.c.execute("SELECT * FROM kittens_data WHERE user_id = ? AND chat_id = ?",
-                          (user_id, chat_id)).fetchone() is not None:
-            list_ = list(self.c.execute("SELECT * FROM kittens_data WHERE user_id = ? AND chat_id = ?",
-                                        (user_id, chat_id)).fetchone())
-        else:
-            list_ = list(self.c.execute("SELECT * FROM kittens_data WHERE user_id = ? AND chat_id = ?",
-                                        (self.get_data(user_id, chat_id, 'user2_id'), chat_id)).fetchone())
-        if target == 'kitten_data':
-            return f"❤️Мама і тато: {self.get_data(list_[2], chat_id, 'name')} " \
-                   f"і {self.get_data(list_[3], chat_id, 'name')}\n🐱Кількість: {list_[4]}\n" \
-                   f"❇️Тип: {list_[7]}\n✨Рівень: {list_[6]}\n"
-        else:
-            return list_[a[target]]
 
     def apartment_exist(self, user_id: int, chat_id: int):
         if self.c.execute("SELECT chat_id FROM apartment_data WHERE user_id = ? AND chat_id = ?",
@@ -453,25 +385,6 @@ class Database:
             owner = self.user_in_all_apartments_exist(user2_id, chat_id)
             self.remove_from_apartment(owner, chat_id, user2_id)
             self.add_user_to_apartment(user_id, chat_id, user2_id)
-
-    def get_apartment_data(self, user_id: int, chat_id: int, target: str):
-        a = {'user_id': 1, 'photo': 3, 'user1_id': 4, 'user2_id': 5, 'user3_id': 6, 'user4_id': 7, 'user5_id': 8,
-             'level': 9, 'type': 10}
-        list_ = list(self.c.execute("SELECT * FROM apartment_data WHERE user_id = ? AND chat_id = ?",
-                                    (user_id, chat_id)).fetchone())
-        if target == 'apartment_data':
-            owner = self.get_data(user_id, chat_id, 'name')
-            cats = ''
-            for i in range(5):
-                if self.get_apartment_data(user_id, chat_id, f'user{i+1}_id') != 0:
-                    cats = cats + f"{self.get_data(self.get_apartment_data(user_id, chat_id, f'user{i+1}_id'), chat_id, 'name')}, "
-            if cats == '':
-                cats = "Нема"
-            else:
-                cats = cats[:len(cats)-2]
-            return f"🧿Власник: {owner}\n❇️Розташування: {list_[10]}\n✨Рівень: {list_[9]}\n🐱Мешканці: {cats}\n"
-        else:
-            return list_[a[target]]
 
     def all_feed(self):
         max_ = {'Домашній кітик': 4, 'Сплячий кітик': 3, 'Грайливий кітик': 5, 'Бойовий кітик': 4,
@@ -579,3 +492,71 @@ class Database:
                         self.c.execute("UPDATE user_data SET health = ? WHERE id = ?", ('Мертвий', i))
                         self.c.execute("UPDATE user_data SET kill_ever = ? WHERE id = ?", (3, i))
         self.conn.commit()
+
+    def get_data(self, user_id: int, chat_id: int, table: str, target: str):
+        return self.c.execute(f"SELECT {target} FROM {table} WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone()[0]
+
+    def get_all_data(self, user_id: int, chat_id: int, table: str, target: str):
+        if table == 'user_data':
+            rz = {'Ні': '', 1: 'раз', 2: 'раза', 3: 'рази', 4: 'рази', 5: 'раз',
+                  6: 'раз', 7: 'раз', 8: 'раз', 9: 'раз', 10: 'раз'}
+            list_ = list(self.c.execute("SELECT * FROM user_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone())
+            if target == 'cat_data':
+                return f"🐱Ім'я: {list_[4]}\n🧶Статус: {list_[5]}\n✨Рівень: {list_[6]}/50\n" \
+                       f"❇️Тип: {list_[7]}\n🧿Клас: {list_[8]}\n❤️Здоров'я: {list_[15]}\n🥩Ситість: {list_[9]}/100\n" \
+                       f"🌈Рівень щастя: {list_[13]}/100\n"
+            elif target == 'cat_info':
+                if list_[10] == 0:
+                    list_[10] = 'Ні'
+                info = f"🐱Ім'я: {list_[4]}\n🥩Можна погодувати: {list_[10]} {rz[list_[10]]}\n🧩Хоче гратися: {list_[11]}\n"
+                if int(self.get_data(user_id, chat_id, 'user_data', 'under_level')) >= 15:
+                    family = ''
+                    if list_[22] == 0:
+                        family = "Нема"
+                    elif list_[22] == 1:
+                        family = self.get_data(list_[23], chat_id, 'user_data', 'name')
+                    elif list_[22] == 2:
+                        family = f"Розлучений з {self.get_data(list_[23], chat_id, 'user_data', 'name')}"
+                    info = info + f"❤️Сім'я: {family}\n"
+                return info
+            elif target == 'cat_money':
+                return f"💰Ваш баланс: {list_[16]}"
+        elif table == 'job_data':
+            day = {0: 'днів', 1: 'день', 2: 'дні', 3: 'дні', 4: 'дні', 5: 'днів', 6: 'днів', 7: 'днів', 8: 'днів',
+                   9: 'днів', 10: 'днів', 11: 'днів', 12: 'днів', 13: 'днів', 14: 'днів'}
+            hour = {1: 'годину', 2: 'години', 3: 'години', 4: 'години', 6: 'годин', 7: 'годин', 8: 'годин',
+                    9: 'годин', 10: 'годин', 11: 'годин', 12: 'годин', 13: 'годин', 14: 'годин', 15: 'годин',
+                    16: 'годин', 17: 'годин', 18: 'годин', 19: 'годин', 20: 'годин', 21: 'годину', 22: 'години',
+                    23: 'години'}
+            list_ = list(self.c.execute("SELECT * FROM job_data WHERE user_id = ? AND chat_id = ?", (user_id, chat_id)).fetchone())
+            vacation_info = ''
+            if list_[17] == 'У відпустці':
+                days = int(list_[31] / 24)
+                hours = int(list_[31] % 24)
+                vacation_info = f"✨{list_[4]} полетів у {list_[30]}, його відпустка закінчиться через " \
+                                f"{days} {day[days]} і {hours} {hour[hours]}✨\n"
+            return f"🛠Професія: {list_[16]}\n🛠Відпрацьовані години: {list_[18]}\n🛠Статус: {list_[17]}\n" + vacation_info
+        elif table == 'kittens_data':
+            if self.c.execute("SELECT * FROM kittens_data WHERE user_id = ? AND chat_id = ?",
+                              (user_id, chat_id)).fetchone() is not None:
+                list_ = list(self.c.execute("SELECT * FROM kittens_data WHERE user_id = ? AND chat_id = ?",
+                                            (user_id, chat_id)).fetchone())
+            else:
+                list_ = list(self.c.execute("SELECT * FROM kittens_data WHERE user_id = ? AND chat_id = ?",
+                                            (self.get_data(user_id, chat_id, 'user_data', 'user2_id'), chat_id)).fetchone())
+            return f"❤️Мама і тато: {self.get_data(list_[2], chat_id, 'user_data', 'name')} " \
+                   f"і {self.get_data(list_[3], chat_id, 'user_data', 'name')}\n🐱Кількість: {list_[4]}\n" \
+                   f"❇️Тип: {list_[7]}\n✨Рівень: {list_[6]}\n"
+        elif table == 'apartment_data':
+            list_ = list(self.c.execute("SELECT * FROM apartment_data WHERE user_id = ? AND chat_id = ?",
+                                        (user_id, chat_id)).fetchone())
+            owner = self.get_data(user_id, chat_id, 'user_data', 'name')
+            cats = ''
+            for i in range(5):
+                if self.get_data(user_id, chat_id, 'apartment_data', f'user{i + 1}_id') != 0:
+                    cats = cats + f"{self.get_data(self.get_data(user_id, chat_id, 'apartment_data', f'user{i + 1}_id'), chat_id, 'user_data', 'name')}, "
+            if cats == '':
+                cats = "Нема"
+            else:
+                cats = cats[:len(cats) - 2]
+            return f"🧿Власник: {owner}\n❇️Розташування: {list_[10]}\n✨Рівень: {list_[9]}\n🐱Мешканці: {cats}\n"
