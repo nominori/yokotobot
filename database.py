@@ -2,6 +2,8 @@ import sqlite3
 import random
 from time import strftime
 from datetime import datetime
+from aiogram import Bot
+from config import TOKEN
 
 photos = [1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018,
           1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109, 1201, 1202, 1203, 1204, 1205, 1206, 1207, 1208, 1209,
@@ -41,7 +43,9 @@ def time_list(user_time: str, target: str):
     elif target in ["wanna_play", "not_doing"]:
         times = [f"{int(user_time[:2]) + 2 * i}:" + user_time[3:] for i in range(12)]
     elif target == "working":
-        return f"{int(user_time[:2]) + 4}:" + user_time[3:]
+        times = [f"{int(user_time[:2]) + 4}:" + user_time[3:]]
+    elif target == "message":
+        times = [f"{int(user_time[:2]) + 4}:" + user_time[3:]]
     for i in range(len(times)):
         if times[i][2] != ':':
             times[i] = "0" + times[i]
@@ -65,6 +69,7 @@ class Database:
             self.c.execute('DROP TABLE IF EXISTS kittens_data')
             self.c.execute('DROP TABLE IF EXISTS apartment_data')
             self.c.execute('DROP TABLE IF EXISTS time_data')
+            self.c.execute('DROP TABLE IF EXISTS messages_data')
         self.c.execute('''
             CREATE TABLE IF NOT EXISTS user_data (
                 id          INTEGER PRIMARY KEY,
@@ -142,6 +147,14 @@ class Database:
                 create_time TEXT NOT NULL,
                 feed_time   TEXT NOT NULL,
                 job_time  TEXT NOT NULL DEFAULT ''
+            )
+        ''')
+        self.c.execute('''
+            CREATE TABLE IF NOT EXISTS messages_data (
+                id          INTEGER PRIMARY KEY,
+                chat_id     INTEGER NOT NULL,
+                message_id  INTEGER NOT NULL,
+                time        TEXT NOT NULL
             )
         ''')
         self.conn.commit()
@@ -539,7 +552,7 @@ class Database:
         for i in range(1, max_id + 1):
             user_time = self.c.execute("SELECT job_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
             if user_time != '':
-                if strftime('%H:%M') == time_list(user_time, "working") and \
+                if strftime('%H:%M') == time_list(user_time, "working")[0] and \
                         self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров' and \
                         self.c.execute("SELECT job_status FROM job_data WHERE id = ?", (i,)).fetchone()[0] == 'На роботі':
                     self.c.execute("UPDATE job_data SET job_status = ? WHERE id = ?", ('Не працює', i))
@@ -615,7 +628,7 @@ class Database:
                 minute = {1: 'хвилину', 2: 'хвилини', 3: 'хвилини', 4: 'хвилини', 5: 'хвилин',
                           6: 'хвилин', 7: 'хвилин', 8: 'хвилин', 9: 'хвилин', 0: 'хвилин'}
                 job_time = self.get_data(user_id, chat_id, 'time_data', 'job_time')
-                stop_job_time = time_list(job_time, 'working')
+                stop_job_time = time_list(job_time, 'working')[0]
                 time_ = str(datetime.strptime(stop_job_time[:5], "%H:%M") - datetime.strptime(strftime("%H:%M"), "%H:%M"))[:4]
                 info = f"🛠Повернеться додому через"
                 if int(time_[:1]) != 0:
@@ -659,3 +672,23 @@ class Database:
 
     def return_max_id(self, table: str):
         return self.c.execute(f"SELECT MAX(id) FROM {table}").fetchall()[0][0]
+
+    async def add_message(self, chat_id: int, message_id: int, number: int):
+        for i in range(number):
+            self.c.execute("INSERT INTO messages_data (chat_id, message_id, time) VALUES (?, ?, ?)",
+                           (chat_id, message_id+i, strftime("%H:%M")))
+        self.conn.commit()
+
+    async def delete_messages(self):
+        if self.c.execute("SELECT MAX(id) FROM messages_data").fetchall()[0][0] is not None:
+            min_id = self.c.execute("SELECT MIN(id) FROM messages_data").fetchall()[0][0]
+            max_id = self.c.execute("SELECT MAX(id) FROM messages_data").fetchall()[0][0]
+            for i in range(min_id, max_id + 1):
+                message_time = self.c.execute("SELECT time FROM messages_data WHERE id = ?", (i,)).fetchone()[0]
+                if strftime('%H:%M') == time_list(message_time, "message")[0]:
+                    chat_id = self.c.execute("SELECT chat_id FROM messages_data WHERE id = ?", (i,)).fetchone()[0]
+                    message_id = self.c.execute("SELECT message_id FROM messages_data WHERE id = ?", (i,)).fetchone()[0]
+                    self.c.execute("DELETE FROM messages_data WHERE id = ?", (i,))
+                    self.conn.commit()
+                    bot = Bot(token=TOKEN)
+                    await bot.delete_message(chat_id, message_id)
