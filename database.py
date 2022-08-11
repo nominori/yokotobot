@@ -599,6 +599,9 @@ class Database:
                                 index = 0
                     time_ = str(datetime.strptime(feed_time_list[index][:5], "%H:%M") - datetime.strptime(strftime("%H:%M"), "%H:%M"))[:4]
                     feed = f" через"
+                    if time_[1] != ':':
+                        time_ = str(datetime.strptime(strftime("%H:%M"), "%H:%M") - datetime.strptime(feed_time_list[index][:5], "%H:%M"))[:5]
+                        time_ = str(datetime.strptime("4:00", "%H:%M") - datetime.strptime(str(int(time_[:2])-20) + time_[2:], "%H:%M"))[:4]
                     if int(time_[:1]) != 0:
                         feed = feed + f" {time_[:1]} {hour[int(time_[:1])]}"
                     feed = feed + f" {int(time_[2:])} {minute[int(time_[3:])]}"
@@ -625,6 +628,9 @@ class Database:
                 stop_job_time = time_list(job_time, 'working')[0]
                 time_ = str(datetime.strptime(stop_job_time[:5], "%H:%M") - datetime.strptime(strftime("%H:%M"), "%H:%M"))[:4]
                 info = f"🛠Повернеться додому через"
+                if time_[1] != ':':
+                    time_ = str(datetime.strptime(strftime("%H:%M"), "%H:%M") - datetime.strptime(stop_job_time[:5], "%H:%M"))[:5]
+                    time_ = str(datetime.strptime("8:00", "%H:%M") - datetime.strptime(str(int(time_[:2])-16) + time_[2:], "%H:%M"))[:4]
                 if int(time_[:1]) != 0:
                     info = info + f" {time_[:1]} {hour[int(time_[:1])]}"
                 info = info + f" {int(time_[2:])} {minute[int(time_[3:])]}"
