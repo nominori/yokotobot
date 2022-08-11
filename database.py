@@ -140,6 +140,7 @@ class Database:
                 chat_id     INTEGER NOT NULL,
                 create_time TEXT NOT NULL,
                 feed_time   TEXT NOT NULL,
+                wanna_play_time   TEXT NOT NULL,
                 job_time  TEXT NOT NULL DEFAULT ''
             )
         ''')
@@ -167,8 +168,9 @@ class Database:
                        "VALUES (?, ?, ?, ?, ?, ?)",
                        (user_id, chat_id, pict, types[pict[:1]], classes[pict[1:2]], play))
         self.c.execute("INSERT INTO job_data (user_id, chat_id) VALUES (?, ?)", (user_id, chat_id))
-        self.c.execute("INSERT INTO time_data (user_id, chat_id, create_time, feed_time) VALUES (?, ?, ?, ?)",
-                       (user_id, chat_id, strftime("%H:%M"), strftime("%H:%M")))
+        self.c.execute("INSERT INTO time_data (user_id, chat_id, create_time, feed_time, wanna_play_time) "
+                       "VALUES (?, ?, ?, ?, ?)",
+                       (user_id, chat_id, strftime("%H:%M"), strftime("%H:%M"), strftime("%H:%M")))
         self.conn.commit()
 
     def name_exist(self, chat_id: int, name):
@@ -299,6 +301,8 @@ class Database:
                        ('Ні', user_id, chat_id))
         self.c.execute("UPDATE user_data SET not_play_times = ? WHERE user_id = ? AND chat_id = ?",
                        (0, user_id, chat_id))
+        self.c.execute("UPDATE time_data SET wanna_play_time = ? WHERE user_id = ? AND chat_id = ?",
+                       (strftime("%H:%M"), user_id, chat_id))
         self.conn.commit()
         await self.change_happiness(user_id, chat_id, happiness[clas])
 
@@ -492,7 +496,7 @@ class Database:
                        'Кітик комуніст': ['Ні', 'Так'], 'Наркіт': ['Ні', 'Так']}
         max_id = self.c.execute("SELECT MAX(id) FROM user_data").fetchall()[0][0]
         for i in range(1, max_id + 1):
-            user_time = self.c.execute("SELECT create_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
+            user_time = self.c.execute("SELECT wanna_play_time FROM time_data WHERE id = ?", (i,)).fetchone()[0]
             if strftime('%H:%M') in time_list(user_time, "wanna_play") and \
                     self.c.execute("SELECT health FROM user_data WHERE id = ?", (i,)).fetchone()[0] == 'Здоров':
                 wanna_play = self.c.execute("SELECT wanna_play FROM user_data WHERE id = ?", (i,)).fetchone()[0]
