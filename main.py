@@ -727,7 +727,7 @@ async def job_choice(call: types.CallbackQuery):
         await data.add_message(chat_id, call.message.message_id, 1)
 
 
-async def allways():
+async def change_database():
     while True:
         await asyncio.sleep(1)
         if time.strftime("%S") == "00":
@@ -737,9 +737,20 @@ async def allways():
             await data.all_job()
             await data.all_stop_working()
             await data.not_doing()
+
+
+async def delete_messages():
+    while True:
+        await asyncio.sleep(1)
+        if time.strftime("%S") == "00":
             await data.delete_messages()
 
+
 if __name__ == '__main__':
-    asyncio.gather(data.init_db())
-    asyncio.gather(allways())
-    executor.start_polling(dp, skip_updates=True)
+    data.init_db()
+    loop = asyncio.get_event_loop()
+    task1 = asyncio.gather(*[change_database()])
+    task2 = asyncio.gather(*[delete_messages()])
+    task3 = asyncio.gather(*[executor.start_polling(dp, skip_updates=True)])
+    tasks = asyncio.gather(task1, task2, task3)
+    loop.run_until_complete(tasks)

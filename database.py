@@ -34,17 +34,11 @@ apartment_types = ['Мегаполіс', 'Столиця', 'Маленьке м�
 
 def time_list(user_time: str, target: str):
     times = []
-    if target == "hungry":
+    if target in ["hungry", "job"]:
         times = [f"{i}:" + user_time[3:] for i in range(24)]
-    elif target == "job":
-        times = [f"{i}:" + user_time[3:] for i in range(24)]
-    elif target == "feed":
+    elif target in ["feed", "wanna_play", "not_doing"]:
         times = [f"{int(user_time[:2]) + 2 * i}:" + user_time[3:] for i in range(12)]
-    elif target in ["wanna_play", "not_doing"]:
-        times = [f"{int(user_time[:2]) + 2 * i}:" + user_time[3:] for i in range(12)]
-    elif target == "working":
-        times = [f"{int(user_time[:2]) + 4}:" + user_time[3:]]
-    elif target == "message":
+    elif target in ["working", "message"]:
         times = [f"{int(user_time[:2]) + 4}:" + user_time[3:]]
     for i in range(len(times)):
         if times[i][2] != ':':
@@ -62,7 +56,7 @@ class Database:
         self.conn = sqlite3.connect('database.db')
         self.c = self.conn.cursor()
 
-    async def init_db(self, force: bool = False):
+    def init_db(self, force: bool = False):
         if force:
             self.c.execute('DROP TABLE IF EXISTS user_data')
             self.c.execute('DROP TABLE IF EXISTS job_data')
@@ -605,7 +599,7 @@ class Database:
                                 index = 0
                     time_ = str(datetime.strptime(feed_time_list[index][:5], "%H:%M") - datetime.strptime(strftime("%H:%M"), "%H:%M"))[:4]
                     feed = f" через"
-                    if time_[:1] != 0:
+                    if int(time_[:1]) != 0:
                         feed = feed + f" {time_[:1]} {hour[int(time_[:1])]}"
                     feed = feed + f" {int(time_[2:])} {minute[int(time_[3:])]}"
                 info = f"🐱Ім'я: {list_[4]}\n🥩Можна нагодувати{feed}\n🧩Хоче гратися: {list_[11]}\n"
@@ -669,9 +663,6 @@ class Database:
             else:
                 cats = cats[:len(cats) - 2]
             return f"🧿Власник: {owner}\n❇️Розташування: {list_[10]}\n✨Рівень: {list_[9]}\n🐱Мешканці: {cats}\n"
-
-    def return_max_id(self, table: str):
-        return self.c.execute(f"SELECT MAX(id) FROM {table}").fetchall()[0][0]
 
     async def add_message(self, chat_id: int, message_id: int, number: int):
         for i in range(number):
